@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
+import { ArrowLeft } from 'lucide-react'
 import { courses } from '../data/courses'
 import { useProgressStore } from '../stores/progressStore'
 import TantanMascot from '../components/TantanMascot'
@@ -60,28 +61,28 @@ export default function Lesson() {
   }
 
   return (
-    <div className="min-h-screen bg-background pb-20">
-      {/* 顶部导航 */}
-      <header className="bg-surface shadow-sm sticky top-0 z-30">
-        <div className="max-w-7xl mx-auto px-4 py-3 flex items-center gap-4">
-          <button
-            className="w-10 h-10 rounded-full bg-surface2 flex items-center justify-center text-xl"
-            onClick={() => navigate('/')}
-          >
-            ←
-          </button>
-          <div>
-            <h1 className="font-heading text-lg text-text">{course.title}</h1>
-            <p className="text-text-light text-sm">📅 {course.date}</p>
-          </div>
+    <div className="min-h-screen bg-background">
+      {/* Header */}
+      <header className="px-4 py-3 flex items-center gap-3 bg-white/50 backdrop-blur-sm sticky top-0 z-50">
+        <button 
+          onClick={() => navigate('/')} 
+          className="p-2 hover:bg-gray-100 rounded-full"
+        >
+          <ArrowLeft size={24} />
+        </button>
+        <div className="flex-1">
+          <h1 className="font-bold text-text truncate">{course.title}</h1>
+        </div>
+        <div className="text-sm text-text-light">
+          📅 {course.date}
         </div>
       </header>
 
       {/* 撒花效果 */}
       <Confetti isActive={showConfetti} />
 
-      {/* 主内容 - 左中右三栏布局 */}
-      <main className="max-w-7xl mx-auto px-4 pt-20 pb-6">
+      {/* Main Content - Three Column Layout */}
+      <main className="px-4 py-6">
         <AnimatePresence mode="wait">
           {!showScore ? (
             <motion.div
@@ -89,24 +90,23 @@ export default function Lesson() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="grid grid-cols-12 gap-6 items-start"
+              className="flex flex-col lg:flex-row gap-6 max-w-7xl mx-auto"
             >
-              {/* 左侧 - 弹弹和按钮 */}
-              <div className="col-span-12 lg:col-span-3 order-2 lg:order-1">
-                <div className="bg-surface rounded-2xl p-6 shadow-lg sticky top-24">
-                  {/* 弹弹 */}
-                  <div className="flex flex-col items-center mb-6">
+              
+              {/* 左侧 - 弹弹 */}
+              <div className="lg:w-64 flex-shrink-0">
+                <div className="bg-white rounded-2xl p-5 shadow-lg lg:sticky lg:top-24">
+                  <div className="text-center">
                     <TantanMascot 
                       state="cheer" 
                       message="加油！你可以的！💪" 
                       size="lg"
                     />
                   </div>
-
-                  {/* 操作按钮 */}
-                  <div className="space-y-3">
+                  
+                  <div className="mt-4 space-y-3 text-center">
                     <button
-                      className="w-full py-3 bg-surface2 text-text rounded-xl font-semibold flex items-center justify-center gap-2"
+                      className="w-full py-3 bg-surface2 text-text rounded-xl font-semibold"
                       onClick={() => navigate('/')}
                     >
                       🏠 返回首页
@@ -116,19 +116,21 @@ export default function Lesson() {
               </div>
 
               {/* 中间 - 谱子 */}
-              <div className="col-span-12 lg:col-span-6 order-1 lg:order-2">
-                <div className="bg-surface rounded-2xl p-4 shadow-lg">
-                  <h3 className="font-heading text-lg text-text mb-3 text-center">🎼 跟弹谱子</h3>
+              <div className="flex-1">
+                <div className="bg-white rounded-2xl p-4 shadow-lg">
+                  <h2 className="font-bold text-text flex items-center gap-2 mb-3">
+                    <span>📜</span> 跟弹谱子
+                  </h2>
                   <SheetView sheet={course.sheet} />
                 </div>
               </div>
 
               {/* 右侧 - 录音 */}
-              <div className="col-span-12 lg:col-span-3 order-3">
-                <div className="bg-surface rounded-2xl p-6 shadow-lg sticky top-24">
-                  <h3 className="font-heading text-lg text-text mb-4 text-center">
-                    🎤 录下你的演奏
-                  </h3>
+              <div className="lg:w-72 flex-shrink-0">
+                <div className="bg-white rounded-2xl p-5 shadow-lg lg:sticky lg:top-24">
+                  <h2 className="font-bold text-text flex items-center gap-2 mb-4">
+                    <span>🎤</span> 录下你的演奏
+                  </h2>
                   
                   <div className="flex flex-col items-center">
                     <RecordButton onRecordingComplete={handleRecordingComplete} />
