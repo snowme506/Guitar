@@ -106,7 +106,7 @@ export default function Lesson() {
       <Confetti isActive={showConfetti} />
 
       {/* Main Content - Three Column Layout */}
-      <main className="px-4 py-6">
+      <main className="px-4 pt-20 pb-6">
         <AnimatePresence mode="wait">
           {!showScore ? (
             <motion.div
