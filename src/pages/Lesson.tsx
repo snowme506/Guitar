@@ -81,7 +81,7 @@ export default function Lesson() {
       <Confetti isActive={showConfetti} />
 
       {/* 主内容 - 左中右三栏布局 */}
-      <main className="max-w-7xl mx-auto px-4 py-6">
+      <main className="max-w-7xl mx-auto px-4 pt-20 pb-6">
         <AnimatePresence mode="wait">
           {!showScore ? (
             <motion.div
