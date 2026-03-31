@@ -11,17 +11,17 @@ export default function Home() {
   const totalStars = useProgressStore((s) => s.totalStars)
   const practiceProgress = useProgressStore((s) => s.practiceProgress)
 
-  // 根据状态分组
-  const getStatus = (id: string) => practiceProgress[id]?.status || 'pending'
-  
-  const pendingPractices = practices.filter(p => getStatus(p.id) === 'pending')
-  const inProgressPractices = practices.filter(p => getStatus(p.id) === 'in_progress')
-  const completedPractices = practices.filter(p => getStatus(p.id) === 'completed')
-
-  // 计算进度
+  // 计算
   const totalPractices = practices.length
-  const completedCount = completedPractices.length
+  const completedCount = practices.filter(p => p.status === 'completed').length
   const progressPercent = totalPractices > 0 ? Math.round((completedCount / totalPractices) * 100) : 0
+
+  // 获取练习进度
+  const getPracticeProgress = (id: string) => {
+    const progress = practiceProgress[id]
+    if (!progress) return 0
+    return progress.dailyPracticeCount || 0
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -47,7 +47,7 @@ export default function Home() {
             whileTap={{ scale: 0.9 }}
             title="家长入口"
           >
-            <span className="text-2xl">⚙️</span>
+            <span className="text-2xl">🎸</span>
           </motion.button>
         </div>
       </header>
@@ -56,7 +56,7 @@ export default function Home() {
       <main className="px-6 py-8">
         <div className="flex flex-col lg:flex-row gap-8 max-w-7xl mx-auto">
           
-          {/* Left Sidebar - Tantan & Progress */}
+          {/* Left Sidebar */}
           <aside className="lg:w-72 flex-shrink-0">
             <div className="lg:sticky lg:top-28 space-y-6">
               
@@ -66,17 +66,16 @@ export default function Home() {
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
               >
-                <TantanMascot message="今天想练什么呀？" size="md" />
+                <TantanMascot message="今天想学什么呀？" size="md" />
                 
-                {/* Quick Stats */}
-                <div className="mt-6 space-y-3">
+                <div className="mt-4 space-y-3">
                   <div className="flex items-center justify-between py-2 border-b border-gray-100">
                     <span className="text-text-light">我的星星</span>
                     <span className="font-bold text-warning text-xl">{totalStars} ⭐</span>
                   </div>
                   <div className="flex items-center justify-between py-2 border-b border-gray-100">
-                    <span className="text-text-light">练习数</span>
-                    <span className="font-bold text-success text-xl">{completedCount}/{totalPractices}</span>
+                    <span className="text-text-light">练习天数</span>
+                    <span className="font-bold text-success text-xl">{completedCount}</span>
                   </div>
                   <div className="flex items-center justify-between py-2">
                     <span className="text-text-light">总进度</span>
@@ -94,7 +93,7 @@ export default function Home() {
               >
                 <div className="flex items-center gap-2 mb-3">
                   <Trophy size={20} />
-                  <span className="font-bold">练习进度</span>
+                  <span className="font-bold">学习进度</span>
                 </div>
                 <div className="bg-white/30 rounded-full h-3 overflow-hidden">
                   <motion.div
@@ -129,16 +128,15 @@ export default function Home() {
 
           {/* Right Content - Practice Grid */}
           <section className="flex-1">
+            <h2 className="text-xl font-bold text-text mb-4 flex items-center gap-2">
+              <span>📚</span> 待练习 ({practices.length})
+            </h2>
             
-            {/* 待练习 */}
-            {pendingPractices.length > 0 && (
-              <div className="mb-8">
-                <h2 className="text-xl font-bold text-text mb-4 flex items-center gap-2">
-                  <span className="w-6 h-6 rounded-full bg-gray-300 text-white text-sm flex items-center justify-center">○</span>
-                  待练习 ({pendingPractices.length})
-                </h2>
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-5">
-                  {pendingPractices.map((practice, index) => (
+            {practices.length > 0 ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-5">
+                {practices.map((practice, index) => {
+                  const progress = getPracticeProgress(practice.id)
+                  return (
                     <motion.div
                       key={practice.id}
                       initial={{ opacity: 0, y: 20 }}
@@ -149,98 +147,35 @@ export default function Home() {
                         className="bg-white rounded-2xl p-5 shadow-lg hover:shadow-xl transition-shadow cursor-pointer"
                         onClick={() => navigate(`/lesson/${practice.id}`)}
                       >
-                        <div className="flex items-center gap-3 mb-3">
+                        <div className="flex items-center gap-3 mb-4">
                           <span className="text-4xl">{practice.emoji}</span>
                           <div className="flex-1">
                             <h3 className="font-bold text-text">{practice.title}</h3>
                             <p className="text-text-light text-sm">📅 {practice.date}</p>
                           </div>
                         </div>
-                        <span className="text-gray-400 text-sm">○ 待练习</span>
-                      </div>
-                    </motion.div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* 练习中 */}
-            {inProgressPractices.length > 0 && (
-              <div className="mb-8">
-                <h2 className="text-xl font-bold text-text mb-4 flex items-center gap-2">
-                  <span className="w-6 h-6 rounded-full bg-primary text-white text-sm flex items-center justify-center">🔄</span>
-                  练习中 ({inProgressPractices.length})
-                </h2>
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-5">
-                  {inProgressPractices.map((practice, index) => (
-                    <motion.div
-                      key={practice.id}
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.1 * index }}
-                    >
-                      <div
-                        className="bg-white rounded-2xl p-5 shadow-lg hover:shadow-xl transition-shadow cursor-pointer border-2 border-primary"
-                        onClick={() => navigate(`/lesson/${practice.id}`)}
-                      >
-                        <div className="flex items-center gap-3 mb-3">
-                          <span className="text-4xl">{practice.emoji}</span>
-                          <div className="flex-1">
-                            <h3 className="font-bold text-text">{practice.title}</h3>
-                            <p className="text-text-light text-sm">📅 {practice.date}</p>
-                          </div>
-                        </div>
-                        <span className="text-primary text-sm">🔄 练习中</span>
-                      </div>
-                    </motion.div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* 已完成 */}
-            {completedPractices.length > 0 && (
-              <div className="mb-8">
-                <h2 className="text-xl font-bold text-text mb-4 flex items-center gap-2">
-                  <span className="w-6 h-6 rounded-full bg-success text-white text-sm flex items-center justify-center">✓</span>
-                  已完成 ({completedPractices.length})
-                </h2>
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-5">
-                  {completedPractices.map((practice, index) => (
-                    <motion.div
-                      key={practice.id}
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.1 * index }}
-                    >
-                      <div
-                        className="bg-white rounded-2xl p-5 shadow-lg hover:shadow-xl transition-shadow cursor-pointer"
-                        onClick={() => navigate(`/lesson/${practice.id}`)}
-                      >
-                        <div className="flex items-center gap-3 mb-3">
-                          <span className="text-4xl">{practice.emoji}</span>
-                          <div className="flex-1">
-                            <h3 className="font-bold text-text">{practice.title}</h3>
-                            <p className="text-text-light text-sm">📅 {practice.date}</p>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <span className="text-success text-sm">✅ 已完成</span>
-                          {practiceProgress[practice.id]?.bestScore && (
-                            <span className="text-warning text-sm">
-                              ⭐ {practiceProgress[practice.id].bestScore}分
+                        
+                        {/* 进度星星 */}
+                        <div className="flex items-center gap-1 mb-3">
+                          {[0, 1, 2].map((i) => (
+                            <span key={i} className={`text-lg ${i < progress ? 'opacity-100' : 'opacity-30'}`}>
+                              ⭐
                             </span>
-                          )}
+                          ))}
+                        </div>
+                        
+                        {/* 播放按钮 */}
+                        <div className="flex justify-end">
+                          <button className="w-10 h-10 bg-primary rounded-full flex items-center justify-center text-white shadow-md">
+                            ▶
+                          </button>
                         </div>
                       </div>
                     </motion.div>
-                  ))}
-                </div>
+                  )
+                })}
               </div>
-            )}
-
-            {/* Empty State */}
-            {practices.length === 0 && (
+            ) : (
               <div className="text-center py-20 bg-white rounded-3xl">
                 <div className="text-6xl mb-4">📚</div>
                 <p className="text-text-light text-lg">还没有练习</p>
@@ -248,6 +183,10 @@ export default function Home() {
               </div>
             )}
 
+            {/* 底部提示 */}
+            <p className="text-center text-gray-400 text-sm mt-8">
+              双击右上角弹弹进入管理模式
+            </p>
           </section>
         </div>
       </main>
