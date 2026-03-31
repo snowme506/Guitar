@@ -9,12 +9,13 @@ export default function Admin() {
   const navigate = useNavigate()
   const [courses, setCourses] = useState(initialCourses)
   const [editingCourse, setEditingCourse] = useState<Course | null>(null)
+  const [showForm, setShowForm] = useState(false)
 
   // 表单状态
   const [courseName, setCourseName] = useState('')
   const [courseEmoji, setCourseEmoji] = useState('🌟')
   const [courseDate, setCourseDate] = useState('')
-  const [courseSheet, setCourseSheet] = useState(editingCourse?.sheet)
+  const [courseSheet, setCourseSheet] = useState<Course['sheet']>(undefined)
 
   const startNewCourse = () => {
     setEditingCourse(null)
@@ -22,6 +23,7 @@ export default function Admin() {
     setCourseEmoji('🌟')
     setCourseDate('')
     setCourseSheet(undefined)
+    setShowForm(true)
   }
 
   const startEditCourse = (course: Course) => {
@@ -30,6 +32,7 @@ export default function Admin() {
     setCourseEmoji(course.emoji)
     setCourseDate(course.date)
     setCourseSheet(course.sheet)
+    setShowForm(true)
   }
 
   const saveCourse = () => {
@@ -61,14 +64,14 @@ export default function Admin() {
       setCourses(prev => [...prev, newCourse])
       alert('课程已添加')
     }
-    startNewCourse()
+    setShowForm(false)
   }
 
   const deleteCourse = (courseId: string) => {
     if (confirm('确定删除这个课程吗？')) {
       setCourses(prev => prev.filter(c => c.id !== courseId))
       if (editingCourse?.id === courseId) {
-        startNewCourse()
+        setShowForm(false)
       }
     }
   }
@@ -136,8 +139,8 @@ export default function Admin() {
           </div>
         </section>
 
-        {/* 编辑/新建课程 */}
-        {(editingCourse !== null || courseName !== '' || editingCourse !== null) && (
+        {/* 编辑/新建课程表单 */}
+        {showForm && (
           <section className="bg-surface rounded-2xl p-6 shadow-lg">
             <h2 className="font-heading text-lg text-text mb-4">
               {editingCourse ? '✏️ 编辑课程' : '➕ 新建课程'}
@@ -203,7 +206,7 @@ export default function Admin() {
               </button>
               <button
                 className="px-6 py-3 bg-surface2 text-text rounded-xl font-semibold"
-                onClick={startNewCourse}
+                onClick={() => setShowForm(false)}
               >
                 取消
               </button>

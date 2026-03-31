@@ -11,75 +11,112 @@ export default function ImageCropper({ imageUrl, onCrop, onCancel }: ImageCroppe
   const containerRef = useRef<HTMLDivElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const [img, setImg] = useState<HTMLImageElement | null>(null)
-  const [containerSize, setContainerSize] = useState({ width: 0, height: 0 })
-  const [cropArea, setCropArea] = useState({ x: 0, y: 0, w: 100, h: 100 })
+  const [displaySize, setDisplaySize] = useState({ width: 300, height: 200 })
+  const [cropArea, setCropArea] = useState({ x: 10, y: 10, w: 80, h: 80 })
   const [isDragging, setIsDragging] = useState(false)
   const [dragType, setDragType] = useState<'move' | 'resize' | null>(null)
-  const [dragStart, setDragStart] = useState({ x: 0, y: 0 })
-  const [scale, setScale] = useState(1)
+  const [dragCorner, setDragCorner] = useState<string | null>(null)
+  const [lastPos, setLastPos] = useState({ x: 0, y: 0 })
 
   useEffect(() => {
     const image = new Image()
     image.crossOrigin = 'anonymous'
     image.onload = () => {
       setImg(image)
-      // 计算容器大小
       if (containerRef.current) {
-        const maxW = containerRef.current.clientWidth - 32
-        const maxH = containerRef.current.clientHeight - 32
-        const ratio = Math.min(maxW / image.width, maxH / image.height, 1)
-        setContainerSize({
+        const maxW = Math.min(containerRef.current.clientWidth - 32, 400)
+        const ratio = Math.min(maxW / image.width, 300 / image.height, 1)
+        setDisplaySize({
           width: image.width * ratio,
           height: image.height * ratio
         })
-        // 默认裁剪区域为整个图片
-        setCropArea({ x: 0, y: 0, w: 100, h: 100 })
+        setCropArea({ x: 5, y: 5, w: 90, h: 90 })
       }
     }
+    image.onerror = () => {
+      alert('图片加载失败')
+      onCancel()
+    }
     image.src = imageUrl
-  }, [imageUrl])
+  }, [imageUrl, onCancel])
 
-  const handleMouseDown = (e: React.MouseEvent, type: 'move' | 'resize', _corner?: string) => {
-    e.preventDefault()
-    setIsDragging(true)
-    setDragType(type)
-    setDragStart({ x: e.clientX, y: e.clientY })
+  const getEventPos = (e: MouseEvent | TouchEvent) => {
+    const rect = containerRef.current?.getBoundingClientRect()
+    if (!rect) return { x: 0, y: 0 }
+    
+    if ('touches' in e) {
+      const touch = e.touches[0] || e.changedTouches[0]
+      return {
+        x: (touch.clientX - rect.left) * (displaySize.width / rect.width),
+        y: (touch.clientY - rect.top) * (displaySize.height / rect.height)
+      }
+    }
+    return {
+      x: (e.clientX - rect.left) * (displaySize.width / rect.width),
+      y: (e.clientY - rect.top) * (displaySize.height / rect.height)
+    }
   }
 
-  const handleMouseMove = (e: React.MouseEvent) => {
+  const handleStart = (e: React.MouseEvent | React.TouchEvent, type: 'move' | 'resize', corner?: string) => {
+    e.preventDefault()
+    const pos = getEventPos(e.nativeEvent)
+    setIsDragging(true)
+    setDragType(type)
+    setDragCorner(corner || null)
+    setLastPos(pos)
+  }
+
+  const handleMove = (e: React.MouseEvent | React.TouchEvent) => {
     if (!isDragging || !dragType) return
 
-    const dx = e.clientX - dragStart.x
-    const dy = e.clientY - dragStart.y
+    const pos = getEventPos(e.nativeEvent)
+    const dx = pos.x - lastPos.x
+    const dy = pos.y - lastPos.y
 
     if (dragType === 'move') {
       setCropArea(prev => ({
         ...prev,
-        x: Math.max(0, Math.min(100 - prev.w, prev.x + (dx / containerSize.width) * 100)),
-        y: Math.max(0, Math.min(100 - prev.h, prev.y + (dy / containerSize.height) * 100))
+        x: Math.max(0, Math.min(100 - prev.w, prev.x + dx)),
+        y: Math.max(0, Math.min(100 - prev.h, prev.y + dy))
       }))
-    } else if (dragType === 'resize') {
-      // 四边/角调整
-      const rect = containerRef.current?.getBoundingClientRect()
-      if (!rect) return
+    } else if (dragType === 'resize' && dragCorner) {
+      const minSize = 15
+      let newX = cropArea.x
+      let newY = cropArea.y
+      let newW = cropArea.w
+      let newH = cropArea.h
 
-      // 简化处理：只支持下边和右边调整大小
-      const newW = Math.max(20, Math.min(100, cropArea.w + (dx / containerSize.width) * 100))
-      const newH = Math.max(20, Math.min(100, cropArea.h + (dy / containerSize.height) * 100))
+      if (dragCorner.includes('e')) {
+        newW = Math.max(minSize, Math.min(100 - newX, cropArea.w + dx))
+      }
+      if (dragCorner.includes('w')) {
+        const proposedX = cropArea.x + dx
+        if (proposedX >= 0 && proposedX < cropArea.x + cropArea.w - minSize) {
+          newX = proposedX
+          newW = cropArea.w - dx
+        }
+      }
+      if (dragCorner.includes('s')) {
+        newH = Math.max(minSize, Math.min(100 - newY, cropArea.h + dy))
+      }
+      if (dragCorner.includes('n')) {
+        const proposedY = cropArea.y + dy
+        if (proposedY >= 0 && proposedY < cropArea.y + cropArea.h - minSize) {
+          newY = proposedY
+          newH = cropArea.h - dy
+        }
+      }
 
-      setCropArea(prev => ({
-        ...prev,
-        w: newW,
-        h: newH
-      }))
+      setCropArea({ x: newX, y: newY, w: newW, h: newH })
     }
 
-    setDragStart({ x: e.clientX, y: e.clientY })
+    setLastPos(pos)
   }
 
-  const handleMouseUp = () => {
+  const handleEnd = () => {
     setIsDragging(false)
     setDragType(null)
+    setDragCorner(null)
   }
 
   const handleCrop = () => {
@@ -89,7 +126,6 @@ export default function ImageCropper({ imageUrl, onCrop, onCancel }: ImageCroppe
     const ctx = canvas.getContext('2d')
     if (!ctx) return
 
-    // 计算实际裁剪区域
     const cropX = (cropArea.x / 100) * img.width
     const cropY = (cropArea.y / 100) * img.height
     const cropW = (cropArea.w / 100) * img.width
@@ -97,7 +133,6 @@ export default function ImageCropper({ imageUrl, onCrop, onCancel }: ImageCroppe
 
     canvas.width = cropW
     canvas.height = cropH
-
     ctx.drawImage(img, cropX, cropY, cropW, cropH, 0, 0, cropW, cropH)
 
     canvas.toBlob((blob) => {
@@ -140,80 +175,91 @@ export default function ImageCropper({ imageUrl, onCrop, onCancel }: ImageCroppe
       <div 
         ref={containerRef}
         className="flex-1 flex items-center justify-center p-4 overflow-hidden"
-        onMouseMove={handleMouseMove}
-        onMouseUp={handleMouseUp}
-        onMouseLeave={handleMouseUp}
+        onMouseMove={handleMove}
+        onMouseUp={handleEnd}
+        onMouseLeave={handleEnd}
+        onTouchMove={handleMove}
+        onTouchEnd={handleEnd}
       >
         <div 
           className="relative"
-          style={{ width: containerSize.width, height: containerSize.height }}
+          style={{ width: displaySize.width, height: displaySize.height }}
         >
           {/* 原图 */}
           <img
             src={imageUrl}
             alt="裁剪"
             className="absolute top-0 left-0"
-            style={{ width: containerSize.width, height: containerSize.height }}
+            style={{ width: displaySize.width, height: displaySize.height }}
             draggable={false}
           />
 
-          {/* 半透明遮罩 */}
-          <div 
-            className="absolute bg-black/50"
-            style={{
-              left: 0,
-              top: 0,
-              width: containerSize.width,
-              height: containerSize.height,
-              clipPath: `polygon(
-                0% 0%, 100% 0%, 100% 100%, 0% 100%,
-                0% 0%,
-                ${cropArea.x}% ${cropArea.y}%,
-                ${cropArea.x}% ${cropArea.y + cropArea.h}%,
-                ${cropArea.x + cropArea.w}% ${cropArea.y + cropArea.h}%,
-                ${cropArea.x + cropArea.w}% ${cropArea.y}%,
-                ${cropArea.x}% ${cropArea.y}%
-              )`
-            }}
-          />
+          {/* 半透明遮罩 - 用 SVG 实现 */}
+          <svg
+            className="absolute top-0 left-0 w-full h-full"
+            style={{ width: displaySize.width, height: displaySize.height }}
+          >
+            <defs>
+              <mask id="cropMask">
+                <rect x="0" y="0" width="100%" height="100%" fill="white" />
+                <rect
+                  x={`${cropArea.x}%`}
+                  y={`${cropArea.y}%`}
+                  width={`${cropArea.w}%`}
+                  height={`${cropArea.h}%`}
+                  fill="black"
+                />
+              </mask>
+            </defs>
+            <rect
+              x="0" y="0" width="100%" height="100%"
+              fill="rgba(0,0,0,0.5)"
+              mask="url(#cropMask)"
+            />
+          </svg>
 
           {/* 裁剪框 */}
           <div
             className="absolute border-2 border-white cursor-move"
             style={{
-              left: (cropArea.x / 100) * containerSize.width,
-              top: (cropArea.y / 100) * containerSize.height,
-              width: (cropArea.w / 100) * containerSize.width,
-              height: (cropArea.h / 100) * containerSize.height,
+              left: `${cropArea.x}%`,
+              top: `${cropArea.y}%`,
+              width: `${cropArea.w}%`,
+              height: `${cropArea.h}%`,
             }}
-            onMouseDown={(e) => handleMouseDown(e, 'move')}
+            onMouseDown={(e) => handleStart(e, 'move')}
+            onTouchStart={(e) => handleStart(e, 'move')}
           >
             {/* 四个边角调整手柄 */}
             {['nw', 'ne', 'sw', 'se'].map((corner) => (
               <div
                 key={corner}
-                className="absolute w-4 h-4 bg-white rounded-full"
+                className="absolute w-5 h-5 bg-white rounded-full border-2 border-primary"
                 style={{
                   cursor: 'nwse-resize',
-                  ...(corner === 'nw' && { top: -8, left: -8 }) ||
-                  (corner === 'ne' && { top: -8, right: -8 }) ||
-                  (corner === 'sw' && { bottom: -8, left: -8 }) ||
-                  (corner === 'se' && { bottom: -8, right: -8 })
+                  ...(corner === 'nw' && { top: -10, left: -10 }) ||
+                  (corner === 'ne' && { top: -10, right: -10 }) ||
+                  (corner === 'sw' && { bottom: -10, left: -10 }) ||
+                  (corner === 'se' && { bottom: -10, right: -10 })
                 }}
                 onMouseDown={(e) => {
                   e.stopPropagation()
-                  handleMouseDown(e, 'resize', corner)
+                  handleStart(e, 'resize', corner)
+                }}
+                onTouchStart={(e) => {
+                  e.stopPropagation()
+                  handleStart(e, 'resize', corner)
                 }}
               />
             ))}
 
             {/* 网格线 */}
-            <div className="absolute inset-0 flex flex-col justify-around">
+            <div className="absolute inset-0 flex flex-col justify-around pointer-events-none">
               {[1, 2].map((i) => (
                 <div key={i} className="w-full h-px bg-white/50" />
               ))}
             </div>
-            <div className="absolute inset-0 flex justify-around">
+            <div className="absolute inset-0 flex justify-around pointer-events-none">
               {[1, 2].map((i) => (
                 <div key={i} className="h-full w-px bg-white/50" />
               ))}
@@ -224,25 +270,12 @@ export default function ImageCropper({ imageUrl, onCrop, onCancel }: ImageCroppe
 
       {/* 控制栏 */}
       <div className="bg-surface p-4 border-t">
-        <div className="flex items-center gap-4 mb-3">
-          <span className="text-text text-sm">缩小</span>
-          <input
-            type="range"
-            min="0.5"
-            max="2"
-            step="0.1"
-            value={scale}
-            onChange={(e) => setScale(parseFloat(e.target.value))}
-            className="flex-1"
-          />
-          <span className="text-text text-sm">放大</span>
-        </div>
         <p className="text-center text-text-light text-sm mb-3">
-          拖动裁剪框调整大小和位置
+          拖动框选区域，或拖动四角调整大小
         </p>
         <button
-          className="w-full py-3 bg-primary text-white rounded-xl font-bold"
-          onClick={() => setCropArea({ x: 0, y: 0, w: 100, h: 100 })}
+          className="w-full py-3 bg-surface2 text-text rounded-xl font-semibold"
+          onClick={() => setCropArea({ x: 5, y: 5, w: 90, h: 90 })}
         >
           重置为整张图片
         </button>
