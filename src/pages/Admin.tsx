@@ -8,6 +8,7 @@ import SheetView from '../components/SheetView'
 export default function Admin() {
   const navigate = useNavigate()
   const practices = useProgressStore((s) => s.practices)
+  const updatePracticeStatus = useProgressStore((s) => s.updatePracticeStatus)
   const { addPractice, updatePractice, deletePractice } = useProgressStore()
   
   const [editingPractice, setEditingPractice] = useState<Practice | null>(null)
@@ -79,7 +80,7 @@ export default function Admin() {
   }
 
   const changeStatus = (practiceId: string, newStatus: PracticeStatus) => {
-    useProgressStore.getState().updatePracticeStatus(practiceId, newStatus)
+    updatePracticeStatus(practiceId, newStatus)
   }
 
   return (
