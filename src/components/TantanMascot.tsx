@@ -13,9 +13,9 @@ const sizeMap = {
 }
 
 const emojiMap = {
-  idle: '💪',
+  idle: '🎸',
   happy: '🎉',
-  cheer: '💪',
+  cheer: '🎸',
   surprised: '😮',
 }
 
