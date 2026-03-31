@@ -1,13 +1,14 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import type { Progress } from '../data/types'
+import type { Progress, PracticeStatus } from '../data/types'
 
 interface ProgressStore extends Progress {
   addStars: (count: number) => void
-  completeCourse: (courseId: string, score: number, stars: number) => void
+  updatePracticeStatus: (practiceId: string, status: PracticeStatus, score?: number) => void
+  completePractice: (practiceId: string, score: number, stars: number) => void
   addBadge: (badgeId: string) => void
   unlockOutfit: (outfitId: string) => void
-  getCourseProgress: (courseId: string) => Progress['courses'][string] | undefined
+  getPracticeProgress: (practiceId: string) => Progress['practices'][string] | undefined
 }
 
 export const useProgressStore = create<ProgressStore>()(
@@ -16,21 +17,35 @@ export const useProgressStore = create<ProgressStore>()(
       totalStars: 0,
       earnedBadges: [],
       outfits: [],
-      courses: {},
+      practices: {},
 
       addStars: (count: number) => 
         set((state) => ({ totalStars: state.totalStars + count })),
 
-      completeCourse: (courseId: string, score: number, stars: number) =>
+      updatePracticeStatus: (practiceId: string, status: PracticeStatus, score?: number) =>
+        set((state) => ({
+          practices: {
+            ...state.practices,
+            [practiceId]: {
+              ...state.practices[practiceId],
+              status,
+              ...(score !== undefined && { bestScore: score }),
+              attempts: (state.practices[practiceId]?.attempts ?? 0) + 1,
+              lastPlayed: new Date().toISOString(),
+            },
+          },
+        })),
+
+      completePractice: (practiceId: string, score: number, stars: number) =>
         set((state) => {
-          const existing = state.courses[courseId]
+          const existing = state.practices[practiceId]
           const isBetter = !existing || score > existing.bestScore
           return {
             totalStars: isBetter ? state.totalStars + stars : state.totalStars,
-            courses: {
-              ...state.courses,
-              [courseId]: {
-                completed: true,
+            practices: {
+              ...state.practices,
+              [practiceId]: {
+                status: 'completed',
                 bestScore: isBetter ? score : existing?.bestScore ?? 0,
                 starsEarned: isBetter ? stars : existing?.starsEarned ?? 0,
                 attempts: (existing?.attempts ?? 0) + 1,
@@ -54,7 +69,7 @@ export const useProgressStore = create<ProgressStore>()(
             : [...state.outfits, outfitId],
         })),
 
-      getCourseProgress: (courseId: string) => get().courses[courseId],
+      getPracticeProgress: (practiceId: string) => get().practices[practiceId],
     }),
     {
       name: 'guitar-progress',

@@ -1,10 +1,15 @@
-export interface Course {
+export type PracticeStatus = 'pending' | 'in_progress' | 'completed'
+
+export interface Practice {
   id: string
   title: string
   emoji: string
   coverColor: string
   date: string  // 上课日期
   sheet?: SheetSource
+  status: PracticeStatus
+  score?: number
+  attempts: number
 }
 
 export interface SheetSource {
@@ -24,9 +29,9 @@ export interface Progress {
   totalStars: number
   earnedBadges: string[]
   outfits: string[]
-  courses: {
-    [courseId: string]: {
-      completed: boolean
+  practices: {
+    [practiceId: string]: {
+      status: PracticeStatus
       bestScore: number
       starsEarned: number
       attempts: number
@@ -45,7 +50,7 @@ export interface Reward {
 
 export interface Review {
   id: string
-  courseId: string
+  practiceId: string
   studentId: string
   audioBlob?: Blob
   audioUrl?: string

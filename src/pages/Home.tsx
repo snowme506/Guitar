@@ -1,7 +1,7 @@
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { Trophy } from 'lucide-react'
-import { courses } from '../data/courses'
+import { practices } from '../data/courses'
 import { useProgressStore } from '../stores/progressStore'
 import TantanMascot from '../components/TantanMascot'
 import StarDisplay from '../components/StarDisplay'
@@ -9,12 +9,19 @@ import StarDisplay from '../components/StarDisplay'
 export default function Home() {
   const navigate = useNavigate()
   const totalStars = useProgressStore((s) => s.totalStars)
-  const courseProgress = useProgressStore((s) => s.courses)
+  const practiceProgress = useProgressStore((s) => s.practices)
+
+  // 根据状态分组
+  const getStatus = (id: string) => practiceProgress[id]?.status || 'pending'
+  
+  const pendingPractices = practices.filter(p => getStatus(p.id) === 'pending')
+  const inProgressPractices = practices.filter(p => getStatus(p.id) === 'in_progress')
+  const completedPractices = practices.filter(p => getStatus(p.id) === 'completed')
 
   // 计算进度
-  const totalCourses = courses.length
-  const completedCourses = Object.values(courseProgress).filter(c => c.completed).length
-  const progressPercent = totalCourses > 0 ? Math.round((completedCourses / totalCourses) * 100) : 0
+  const totalPractices = practices.length
+  const completedCount = completedPractices.length
+  const progressPercent = totalPractices > 0 ? Math.round((completedCount / totalPractices) * 100) : 0
 
   return (
     <div className="min-h-screen bg-background">
@@ -59,7 +66,7 @@ export default function Home() {
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
               >
-                <TantanMascot message="今天想学什么呀？" size="md" />
+                <TantanMascot message="今天想练什么呀？" size="md" />
                 
                 {/* Quick Stats */}
                 <div className="mt-6 space-y-3">
@@ -68,8 +75,8 @@ export default function Home() {
                     <span className="font-bold text-warning text-xl">{totalStars} ⭐</span>
                   </div>
                   <div className="flex items-center justify-between py-2 border-b border-gray-100">
-                    <span className="text-text-light">课程数</span>
-                    <span className="font-bold text-success text-xl">{completedCourses}/{totalCourses}</span>
+                    <span className="text-text-light">练习数</span>
+                    <span className="font-bold text-success text-xl">{completedCount}/{totalPractices}</span>
                   </div>
                   <div className="flex items-center justify-between py-2">
                     <span className="text-text-light">总进度</span>
@@ -87,7 +94,7 @@ export default function Home() {
               >
                 <div className="flex items-center gap-2 mb-3">
                   <Trophy size={20} />
-                  <span className="font-bold">学习进度</span>
+                  <span className="font-bold">练习进度</span>
                 </div>
                 <div className="bg-white/30 rounded-full h-3 overflow-hidden">
                   <motion.div
@@ -120,55 +127,124 @@ export default function Home() {
             </div>
           </aside>
 
-          {/* Right Content - Course Grid */}
+          {/* Right Content - Practice Grid */}
           <section className="flex-1">
-            <h2 className="text-xl font-bold text-text mb-4 flex items-center gap-2">
-              <span>📚</span> 课程列表
-            </h2>
             
-            {courses.length > 0 ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-5">
-                {courses.map((course, index) => (
-                  <motion.div
-                    key={course.id}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.1 * index }}
-                  >
-                    <div
-                      className="bg-white rounded-2xl p-5 shadow-lg hover:shadow-xl transition-shadow cursor-pointer"
-                      onClick={() => navigate(`/lesson/${course.id}`)}
+            {/* 待练习 */}
+            {pendingPractices.length > 0 && (
+              <div className="mb-8">
+                <h2 className="text-xl font-bold text-text mb-4 flex items-center gap-2">
+                  <span className="w-6 h-6 rounded-full bg-gray-300 text-white text-sm flex items-center justify-center">○</span>
+                  待练习 ({pendingPractices.length})
+                </h2>
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-5">
+                  {pendingPractices.map((practice, index) => (
+                    <motion.div
+                      key={practice.id}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.1 * index }}
                     >
-                      <div className="flex items-center gap-3 mb-3">
-                        <span className="text-4xl">{course.emoji}</span>
-                        <div className="flex-1">
-                          <h3 className="font-bold text-text">{course.title}</h3>
-                          <p className="text-text-light text-sm">📅 {course.date}</p>
+                      <div
+                        className="bg-white rounded-2xl p-5 shadow-lg hover:shadow-xl transition-shadow cursor-pointer"
+                        onClick={() => navigate(`/lesson/${practice.id}`)}
+                      >
+                        <div className="flex items-center gap-3 mb-3">
+                          <span className="text-4xl">{practice.emoji}</span>
+                          <div className="flex-1">
+                            <h3 className="font-bold text-text">{practice.title}</h3>
+                            <p className="text-text-light text-sm">📅 {practice.date}</p>
+                          </div>
+                        </div>
+                        <span className="text-gray-400 text-sm">○ 待练习</span>
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* 练习中 */}
+            {inProgressPractices.length > 0 && (
+              <div className="mb-8">
+                <h2 className="text-xl font-bold text-text mb-4 flex items-center gap-2">
+                  <span className="w-6 h-6 rounded-full bg-primary text-white text-sm flex items-center justify-center">🔄</span>
+                  练习中 ({inProgressPractices.length})
+                </h2>
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-5">
+                  {inProgressPractices.map((practice, index) => (
+                    <motion.div
+                      key={practice.id}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.1 * index }}
+                    >
+                      <div
+                        className="bg-white rounded-2xl p-5 shadow-lg hover:shadow-xl transition-shadow cursor-pointer border-2 border-primary"
+                        onClick={() => navigate(`/lesson/${practice.id}`)}
+                      >
+                        <div className="flex items-center gap-3 mb-3">
+                          <span className="text-4xl">{practice.emoji}</span>
+                          <div className="flex-1">
+                            <h3 className="font-bold text-text">{practice.title}</h3>
+                            <p className="text-text-light text-sm">📅 {practice.date}</p>
+                          </div>
+                        </div>
+                        <span className="text-primary text-sm">🔄 练习中</span>
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* 已完成 */}
+            {completedPractices.length > 0 && (
+              <div className="mb-8">
+                <h2 className="text-xl font-bold text-text mb-4 flex items-center gap-2">
+                  <span className="w-6 h-6 rounded-full bg-success text-white text-sm flex items-center justify-center">✓</span>
+                  已完成 ({completedPractices.length})
+                </h2>
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-5">
+                  {completedPractices.map((practice, index) => (
+                    <motion.div
+                      key={practice.id}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.1 * index }}
+                    >
+                      <div
+                        className="bg-white rounded-2xl p-5 shadow-lg hover:shadow-xl transition-shadow cursor-pointer"
+                        onClick={() => navigate(`/lesson/${practice.id}`)}
+                      >
+                        <div className="flex items-center gap-3 mb-3">
+                          <span className="text-4xl">{practice.emoji}</span>
+                          <div className="flex-1">
+                            <h3 className="font-bold text-text">{practice.title}</h3>
+                            <p className="text-text-light text-sm">📅 {practice.date}</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-success text-sm">✅ 已完成</span>
+                          {practiceProgress[practice.id]?.bestScore && (
+                            <span className="text-warning text-sm">
+                              ⭐ {practiceProgress[practice.id].bestScore}分
+                            </span>
+                          )}
                         </div>
                       </div>
-                      
-                      {/* 进度指示 */}
-                      <div className="flex items-center gap-2">
-                        {courseProgress[course.id]?.completed ? (
-                          <span className="text-success text-sm">✅ 已完成</span>
-                        ) : (
-                          <span className="text-primary text-sm">○ 待学习</span>
-                        )}
-                        {courseProgress[course.id]?.bestScore && (
-                          <span className="text-warning text-sm">
-                            ⭐ {courseProgress[course.id].bestScore}分
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  </motion.div>
-                ))}
+                    </motion.div>
+                  ))}
+                </div>
               </div>
-            ) : (
+            )}
+
+            {/* Empty State */}
+            {practices.length === 0 && (
               <div className="text-center py-20 bg-white rounded-3xl">
                 <div className="text-6xl mb-4">📚</div>
-                <p className="text-text-light text-lg">还没有课程</p>
-                <p className="text-gray-400 mt-2">点击右上角⚙️进入管理模式添加课程</p>
+                <p className="text-text-light text-lg">还没有练习</p>
+                <p className="text-gray-400 mt-2">点击右上角⚙️进入管理模式添加练习</p>
               </div>
             )}
 

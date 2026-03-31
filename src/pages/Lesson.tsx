@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ArrowLeft } from 'lucide-react'
-import { courses } from '../data/courses'
+import { practices } from '../data/courses'
 import { useProgressStore } from '../stores/progressStore'
 import TantanMascot from '../components/TantanMascot'
 import SheetView from '../components/SheetView'
@@ -17,9 +17,13 @@ export default function Lesson() {
   const [showScore, setShowScore] = useState(false)
   const [currentScore, setCurrentScore] = useState(0)
   const [recordingUrl, setRecordingUrl] = useState<string | null>(null)
+  const practiceProgress = useProgressStore((s) => s.practices)
+  const completePractice = useProgressStore((s) => s.completePractice)
+  const updatePracticeStatus = useProgressStore((s) => s.updatePracticeStatus)
 
-  // 找到当前课程
-  const course = courses.find(c => c.id === lessonId)
+  // 找到当前练习
+  const practice = practices.find(p => p.id === lessonId)
+  const currentStatus = (_practiceId: string) => practiceProgress[lessonId!]?.status || 'pending'
 
   const handleRecordingComplete = (_blob: Blob, url: string) => {
     setRecordingUrl(url)
@@ -28,8 +32,9 @@ export default function Lesson() {
     const stars = score >= 90 ? 3 : score >= 70 ? 2 : 1
     setCurrentScore(score)
     
-    // 更新进度
-    useProgressStore.getState().completeCourse(lessonId!, score, stars)
+    // 更新状态
+    updatePracticeStatus(lessonId!, 'in_progress', score)
+    completePractice(lessonId!, score, stars)
     setShowConfetti(true)
     setShowScore(true)
   }
@@ -43,12 +48,12 @@ export default function Lesson() {
     navigate('/')
   }
 
-  if (!course) {
+  if (!practice) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
           <p className="text-4xl mb-4">😢</p>
-          <p className="text-text">找不到这个课程</p>
+          <p className="text-text">找不到这个练习</p>
           <button
             className="mt-4 px-6 py-2 bg-primary text-white rounded-xl"
             onClick={() => navigate('/')}
@@ -58,6 +63,20 @@ export default function Lesson() {
         </div>
       </div>
     )
+  }
+
+  const getStatusLabel = () => {
+    const status = currentStatus(practice.id)
+    if (status === 'completed') return '✅ 已完成'
+    if (status === 'in_progress') return '🔄 练习中'
+    return '○ 待练习'
+  }
+
+  const getStatusColor = () => {
+    const status = currentStatus(practice.id)
+    if (status === 'completed') return 'text-success'
+    if (status === 'in_progress') return 'text-primary'
+    return 'text-text-light'
   }
 
   return (
@@ -71,10 +90,10 @@ export default function Lesson() {
           <ArrowLeft size={24} />
         </button>
         <div className="flex-1">
-          <h1 className="font-bold text-text truncate">{course.title}</h1>
+          <h1 className="font-bold text-text truncate">{practice.title}</h1>
         </div>
-        <div className="text-sm text-text-light">
-          📅 {course.date}
+        <div className={`text-sm ${getStatusColor()}`}>
+          {getStatusLabel()}
         </div>
       </header>
 
@@ -121,7 +140,7 @@ export default function Lesson() {
                   <h2 className="font-bold text-text flex items-center gap-2 mb-3">
                     <span>📜</span> 跟弹谱子
                   </h2>
-                  <SheetView sheet={course.sheet} />
+                  <SheetView sheet={practice.sheet} />
                 </div>
               </div>
 
