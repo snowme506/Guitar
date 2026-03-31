@@ -1,15 +1,101 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { courses } from '../data/courses'
-import type { Course } from '../data/types'
-import SheetView from '../components/SheetView'
+import { courses as initialCourses } from '../data/courses'
+import type { Course, Lesson } from '../data/types'
 import SheetSearchWebView from '../components/SheetSearchWebView'
 
 export default function Admin() {
   const navigate = useNavigate()
+  const [courses, setCourses] = useState(initialCourses)
+  const [editingCourse, setEditingCourse] = useState<Course | null>(null)
   const [showSheetSearch, setShowSheetSearch] = useState(false)
-  const [_editingCourse, setEditingCourse] = useState<Course | null>(null)
+
+  // 课程表单状态
+  const [courseName, setCourseName] = useState('')
+  const [courseEmoji, setCourseEmoji] = useState('🌟')
+  const [lessonName, setLessonName] = useState('')
+  const [sheetUrl, setSheetUrl] = useState('')
+
+  const startNewCourse = () => {
+    setEditingCourse(null)
+    setCourseName('')
+    setCourseEmoji('🌟')
+    setLessonName('')
+    setSheetUrl('')
+  }
+
+  const startEditCourse = (course: Course) => {
+    setEditingCourse(course)
+    setCourseName(course.title)
+    setCourseEmoji(course.emoji)
+    setLessonName('')
+    setSheetUrl('')
+  }
+
+  const saveCourse = () => {
+    if (!courseName.trim()) {
+      alert('请输入课程名称')
+      return
+    }
+
+    if (editingCourse) {
+      // 更新现有课程
+      setCourses(prev => prev.map(c => 
+        c.id === editingCourse.id 
+          ? { ...c, title: courseName, emoji: courseEmoji }
+          : c
+      ))
+      alert('课程已更新')
+    } else {
+      // 新建课程
+      const newCourse: Course = {
+        id: `course-${Date.now()}`,
+        title: courseName,
+        emoji: courseEmoji,
+        coverColor: '#FFB347',
+        lessons: [],
+      }
+      setCourses(prev => [...prev, newCourse])
+      alert('课程已添加')
+    }
+    startNewCourse()
+  }
+
+  const addLesson = () => {
+    if (!editingCourse) {
+      alert('请先选择或创建课程')
+      return
+    }
+    if (!lessonName.trim()) {
+      alert('请输入课时名称')
+      return
+    }
+
+    const newLesson: Lesson = {
+      id: `lesson-${Date.now()}`,
+      title: lessonName,
+      duration: 180,
+      starsToUnlock: 0,
+      content: {
+        sheet: sheetUrl ? { type: 'url', imageUrl: sheetUrl } : undefined,
+      },
+    }
+
+    setCourses(prev => prev.map(c => 
+      c.id === editingCourse.id 
+        ? { ...c, lessons: [...c.lessons, newLesson] }
+        : c
+    ))
+    setLessonName('')
+    setSheetUrl('')
+    alert('课时已添加')
+  }
+
+  const handleSheetSearch = (url: string) => {
+    setSheetUrl(url)
+    setShowSheetSearch(false)
+  }
 
   return (
     <div className="min-h-screen bg-background pb-20">
@@ -29,15 +115,25 @@ export default function Admin() {
       <main className="max-w-4xl mx-auto px-4 py-6">
         {/* 课程列表 */}
         <section className="mb-8">
-          <h2 className="font-heading text-lg text-text mb-4">📚 课程列表</h2>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="font-heading text-lg text-text">📚 课程列表</h2>
+            <button
+              className="px-4 py-2 bg-primary text-white rounded-xl text-sm"
+              onClick={startNewCourse}
+            >
+              ➕ 新建课程
+            </button>
+          </div>
           <div className="space-y-4">
             {courses.map(course => (
               <motion.div
                 key={course.id}
-                className="bg-surface rounded-2xl p-4 shadow"
+                className={`bg-surface rounded-2xl p-4 shadow ${
+                  editingCourse?.id === course.id ? 'ring-4 ring-primary' : ''
+                }`}
                 whileTap={{ scale: 0.98 }}
               >
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-3 mb-3">
                   <span className="text-3xl">{course.emoji}</span>
                   <div className="flex-1">
                     <h3 className="font-semibold text-text">{course.title}</h3>
@@ -46,65 +142,136 @@ export default function Admin() {
                     </p>
                   </div>
                   <button
-                    className="px-4 py-2 bg-primary text-white rounded-xl text-sm"
-                    onClick={() => setEditingCourse(course)}
+                    className="px-4 py-2 bg-secondary text-white rounded-xl text-sm"
+                    onClick={() => startEditCourse(course)}
                   >
                     编辑
                   </button>
                 </div>
+
+                {/* 课时列表 */}
+                {editingCourse?.id === course.id && course.lessons.length > 0 && (
+                  <div className="mt-3 pl-4 border-l-2 border-primary/30">
+                    <p className="text-sm text-text-light mb-2">课时：</p>
+                    <div className="space-y-2">
+                      {course.lessons.map((lesson, idx) => (
+                        <div key={lesson.id} className="flex items-center gap-2 text-sm">
+                          <span className="text-text-light">{idx + 1}.</span>
+                          <span className="text-text">{lesson.title}</span>
+                          {lesson.content.sheet?.imageUrl && (
+                            <span className="text-success">✓ 有谱子</span>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </motion.div>
             ))}
           </div>
         </section>
 
-        {/* 添加新课程 */}
-        <section>
-          <h2 className="font-heading text-lg text-text mb-4">➕ 添加新课程</h2>
-          <motion.div
-            className="bg-surface rounded-2xl p-6 shadow"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-          >
-            {/* 课程信息 */}
-            <div className="mb-6">
+        {/* 编辑/新建课程 */}
+        {(editingCourse !== null || courseName !== '' || editingCourse !== null) && (
+          <section className="bg-surface rounded-2xl p-6 shadow-lg">
+            <h2 className="font-heading text-lg text-text mb-4">
+              {editingCourse ? '✏️ 编辑课程' : '➕ 新建课程'}
+            </h2>
+
+            {/* 课程名称 */}
+            <div className="mb-4">
               <label className="block text-text font-semibold mb-2">课程名称</label>
               <input
                 type="text"
+                value={courseName}
+                onChange={(e) => setCourseName(e.target.value)}
                 placeholder="例如：入门课程"
                 className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary"
               />
             </div>
 
-            {/* 谱子来源 */}
-            <div className="mb-6">
-              <label className="block text-text font-semibold mb-2">🎼 谱子</label>
-              <SheetView 
-                editable={true}
-                onSheetChange={(sheet) => console.log('Sheet changed:', sheet)}
-              />
-              <button
-                className="mt-2 w-full py-2 bg-secondary text-white rounded-xl"
-                onClick={() => setShowSheetSearch(true)}
-              >
-                🔍 从网络搜索谱子
-              </button>
+            {/* 课程图标 */}
+            <div className="mb-4">
+              <label className="block text-text font-semibold mb-2">图标</label>
+              <div className="flex gap-3">
+                {['🌟', '🎸', '🎵', '🎶', '🎤', '🎹', '🪗', '🎼'].map(emoji => (
+                  <button
+                    key={emoji}
+                    className={`w-12 h-12 text-2xl rounded-xl ${
+                      courseEmoji === emoji ? 'bg-primary ring-2 ring-primary' : 'bg-surface2'
+                    }`}
+                    onClick={() => setCourseEmoji(emoji)}
+                  >
+                    {emoji}
+                  </button>
+                ))}
+              </div>
             </div>
 
-            {/* 提交按钮 */}
-            <button className="w-full py-3 bg-primary text-white rounded-xl font-bold text-lg">
+            <button
+              className="w-full py-3 bg-primary text-white rounded-xl font-bold mb-6"
+              onClick={saveCourse}
+            >
               保存课程
             </button>
-          </motion.div>
-        </section>
+
+            {/* 添加课时 */}
+            {editingCourse && (
+              <div className="border-t pt-6">
+                <h3 className="font-semibold text-text mb-4">➕ 添加课时</h3>
+
+                <div className="mb-4">
+                  <label className="block text-text font-semibold mb-2">课时名称</label>
+                  <input
+                    type="text"
+                    value={lessonName}
+                    onChange={(e) => setLessonName(e.target.value)}
+                    placeholder="例如：认识吉他"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary"
+                  />
+                </div>
+
+                {/* 谱子 */}
+                <div className="mb-4">
+                  <label className="block text-text font-semibold mb-2">🎼 谱子</label>
+                  {sheetUrl ? (
+                    <div className="flex items-center gap-2 bg-accent/20 p-3 rounded-xl">
+                      <span className="text-accent">✓</span>
+                      <span className="text-sm text-text flex-1 truncate">{sheetUrl}</span>
+                      <button
+                        className="text-sm text-error"
+                        onClick={() => setSheetUrl('')}
+                      >
+                        清除
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      className="w-full py-3 bg-secondary text-white rounded-xl font-semibold"
+                      onClick={() => setShowSheetSearch(true)}
+                    >
+                      🔍 搜索谱子
+                    </button>
+                  )}
+                </div>
+
+                <button
+                  className="w-full py-3 bg-accent text-white rounded-xl font-bold"
+                  onClick={addLesson}
+                >
+                  添加课时
+                </button>
+              </div>
+            )}
+          </section>
+        )}
       </main>
 
-      {/* WebView 搜索 */}
+      {/* 网络搜索谱子 */}
       <SheetSearchWebView
         isOpen={showSheetSearch}
         onClose={() => setShowSheetSearch(false)}
-        onSelectSheet={(url) => {
-          console.log('Selected sheet:', url)
-        }}
+        onSelectSheet={handleSheetSearch}
       />
     </div>
   )

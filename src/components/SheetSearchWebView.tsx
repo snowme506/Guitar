@@ -8,9 +8,24 @@ interface SheetSearchWebViewProps {
 }
 
 const searchEngines = [
-  { name: 'Ultimate Guitar', url: 'https://ultimate-guitar.com', emoji: '🎸' },
-  { name: 'Chordify', url: 'https://chordify.net', emoji: '🎵' },
-  { name: 'Guitar.com', url: 'https://guitar.com', emoji: '🎶' },
+  { 
+    name: 'Ultimate Guitar', 
+    url: 'https://www.ultimate-guitar.com', 
+    emoji: '🎸',
+    searchPath: '/search.php?type=300'
+  },
+  { 
+    name: 'Chordify', 
+    url: 'https://chordify.net', 
+    emoji: '🎵',
+    searchPath: '/searches/'
+  },
+  { 
+    name: 'Guitar.com', 
+    url: 'https://guitar.com', 
+    emoji: '🎶',
+    searchPath: '/?s='
+  },
 ]
 
 export default function SheetSearchWebView({ 
@@ -19,20 +34,34 @@ export default function SheetSearchWebView({
   onSelectSheet 
 }: SheetSearchWebViewProps) {
   const [selectedEngine, setSelectedEngine] = useState(searchEngines[0])
-  const [customUrl, setCustomUrl] = useState('')
-  const [iframeUrl, setIframeUrl] = useState<string | null>(null)
+  const [songName, setSongName] = useState('')
   const [showIframe, setShowIframe] = useState(false)
+  const [iframeUrl, setIframeUrl] = useState<string | null>(null)
 
-  const openInWebView = (url: string) => {
-    setIframeUrl(url)
+  const handleSearch = () => {
+    if (!songName.trim()) {
+      alert('请输入歌曲名称')
+      return
+    }
+    
+    const encodedSong = encodeURIComponent(songName.trim())
+    const searchUrl = `${selectedEngine.url}${selectedEngine.searchPath}${encodedSong}`
+    setIframeUrl(searchUrl)
     setShowIframe(true)
   }
 
   const handleClose = () => {
     setShowIframe(false)
     setIframeUrl(null)
-    setCustomUrl('')
+    setSongName('')
     onClose()
+  }
+
+  const handleSelectCurrentUrl = () => {
+    if (iframeUrl) {
+      onSelectSheet?.(iframeUrl)
+      handleClose()
+    }
   }
 
   return (
@@ -64,12 +93,33 @@ export default function SheetSearchWebView({
             </div>
 
             {/* 内容 */}
-            <div className="flex-1 overflow-hidden flex">
+            <div className="flex-1 overflow-hidden flex flex-col">
               {!showIframe ? (
-                /* 搜索引擎选择 */
+                /* 搜索界面 */
                 <div className="flex-1 p-6 overflow-y-auto">
-                  <p className="text-text-light mb-4">选择一个网站搜索吉他谱：</p>
-                  
+                  {/* 歌曲名输入 */}
+                  <div className="mb-6">
+                    <label className="block text-text font-semibold mb-2">歌曲名称</label>
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={songName}
+                        onChange={(e) => setSongName(e.target.value)}
+                        placeholder="输入歌曲名，如：小星星"
+                        className="flex-1 px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary text-lg"
+                        onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                      />
+                      <button
+                        className="px-6 py-3 bg-primary text-white rounded-xl font-semibold text-lg"
+                        onClick={handleSearch}
+                      >
+                        搜索
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* 选择搜索引擎 */}
+                  <p className="text-text-light mb-3">选择搜索网站：</p>
                   <div className="space-y-3">
                     {searchEngines.map((engine) => (
                       <motion.button
@@ -80,10 +130,7 @@ export default function SheetSearchWebView({
                             : 'bg-surface hover:bg-surface2'
                         }`}
                         whileTap={{ scale: 0.98 }}
-                        onClick={() => {
-                          setSelectedEngine(engine)
-                          openInWebView(engine.url)
-                        }}
+                        onClick={() => setSelectedEngine(engine)}
                       >
                         <span className="text-3xl">{engine.emoji}</span>
                         <span className="font-semibold">{engine.name}</span>
@@ -91,49 +138,16 @@ export default function SheetSearchWebView({
                     ))}
                   </div>
 
-                  {/* 自定义 URL */}
-                  <div className="mt-6 pt-6 border-t">
-                    <p className="text-text-light mb-3">或输入网址：</p>
-                    <div className="flex gap-2">
-                      <input
-                        type="url"
-                        value={customUrl}
-                        onChange={(e) => setCustomUrl(e.target.value)}
-                        placeholder="https://..."
-                        className="flex-1 px-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary"
-                      />
-                      <button
-                        className="px-6 py-2 bg-primary text-white rounded-xl font-semibold"
-                        onClick={() => customUrl && openInWebView(customUrl)}
-                      >
-                        打开
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* 使用提示 */}
+                  {/* 提示 */}
                   <div className="mt-6 p-4 bg-surface2 rounded-xl">
                     <p className="text-sm text-text-light">
-                      💡 <strong>提示：</strong>在网站上找到想要的谱子后，复制图片地址或网页链接，
-                      然后点击下方按钮粘贴回来。
+                      💡 <strong>提示：</strong>搜索到谱子后，点击"使用此谱子"按钮即可。
+                      也可以复制网页地址粘贴回来。
                     </p>
                   </div>
-
-                  <button
-                    className="mt-4 w-full py-3 bg-accent text-white rounded-xl font-semibold"
-                    onClick={() => {
-                      const url = window.prompt('请粘贴谱子图片或网页的网址：')
-                      if (url) {
-                        onSelectSheet?.(url)
-                        handleClose()
-                      }
-                    }}
-                  >
-                    📋 粘贴谱子链接
-                  </button>
                 </div>
               ) : (
-                /* iframe 内嵌浏览 */
+                /* 浏览器内嵌界面 */
                 <div className="flex-1 flex flex-col">
                   {/* URL 栏 */}
                   <div className="bg-surface p-3 border-b flex items-center gap-2">
@@ -151,20 +165,42 @@ export default function SheetSearchWebView({
                     />
                     <button
                       className="px-3 py-1 bg-primary text-white rounded-lg text-sm"
-                      onClick={() => iframeUrl && openInWebView(iframeUrl)}
+                      onClick={() => iframeUrl && setIframeUrl(iframeUrl)}
                     >
                       跳转
                     </button>
                   </div>
 
                   {/* iframe 内容 */}
-                  <div className="flex-1 bg-white">
+                  <div className="flex-1 bg-white relative">
                     <iframe
                       src={iframeUrl ?? ''}
                       className="w-full h-full border-0"
                       title="谱子搜索"
-                      sandbox="allow-scripts allow-same-origin allow-forms"
+                      sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
                     />
+                    
+                    {/* 底部操作栏 */}
+                    <div className="absolute bottom-0 left-0 right-0 bg-surface border-t p-3 flex gap-3">
+                      <button
+                        className="flex-1 py-3 bg-accent text-white rounded-xl font-semibold"
+                        onClick={handleSelectCurrentUrl}
+                      >
+                        ✓ 使用此谱子
+                      </button>
+                      <button
+                        className="px-6 py-3 bg-surface2 text-text rounded-xl font-semibold"
+                        onClick={() => {
+                          const url = window.prompt('或粘贴谱子网址：')
+                          if (url) {
+                            onSelectSheet?.(url)
+                            handleClose()
+                          }
+                        }}
+                      >
+                        粘贴网址
+                      </button>
+                    </div>
                   </div>
                 </div>
               )}

@@ -97,16 +97,6 @@ export default function SheetView({ sheet, onSheetChange, editable = false }: Sh
             />
           </div>
 
-          {/* 网络搜索按钮 */}
-          <button
-            className="mt-4 w-full bg-secondary text-white py-3 rounded-xl font-semibold flex items-center justify-center gap-2"
-            onClick={() => {
-              // 触发 WebView 搜索（后续由父组件处理）
-              onSheetChange?.({ type: 'url', imageUrl: '' })
-            }}
-          >
-            🔍 网络搜索谱子
-          </button>
         </div>
       )}
 
