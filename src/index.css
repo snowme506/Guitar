@@ -1,0 +1,156 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --color-primary: #FFB347;
+  --color-secondary: #87CEEB;
+  --color-accent: #98D8AA;
+  --color-highlight: #FF6B9D;
+  --color-background: #FFF9F0;
+  --color-surface: #FFFFFF;
+  --color-surface2: #FFF0E6;
+  --color-text: #5D4E37;
+  --color-text-light: #8B7355;
+  --color-success: #7ED957;
+  --color-error: #FF8A80;
+  --color-warning: #FFD54F;
+  --color-star: #FFD700;
+  --color-gold: #FFA000;
+  --color-purple: #B39DDB;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: 'Nunito', 'ZCOOL XiaoWei', sans-serif;
+  background-color: var(--color-background);
+  color: var(--color-text);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* 童趣字体 */
+.font-heading {
+  font-family: 'ZCOOL KuaiLe', 'Nunito', cursive;
+}
+
+/* 弹弹吉祥物动画 */
+@keyframes bounce-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+
+@keyframes spin-celebrate {
+  0% { transform: rotate(0deg) scale(1); }
+  50% { transform: rotate(180deg) scale(1.2); }
+  100% { transform: rotate(360deg) scale(1); }
+}
+
+@keyframes pulse-record {
+  0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255, 82, 82, 0.4); }
+  50% { transform: scale(1.05); box-shadow: 0 0 0 15px rgba(255, 82, 82, 0); }
+}
+
+@keyframes star-burst {
+  0% { transform: scale(0) rotate(0deg); opacity: 1; }
+  100% { transform: scale(2) rotate(180deg); opacity: 0; }
+}
+
+@keyframes slide-up {
+  0% { transform: translateY(20px); opacity: 0; }
+  100% { transform: translateY(0); opacity: 1; }
+}
+
+.animate-bounce-float {
+  animation: bounce-float 2s ease-in-out infinite;
+}
+
+.animate-spin-celebrate {
+  animation: spin-celebrate 0.6s ease-in-out;
+}
+
+.animate-pulse-record {
+  animation: pulse-record 1.5s ease-in-out infinite;
+}
+
+.animate-star-burst {
+  animation: star-burst 0.6s ease-out forwards;
+}
+
+.animate-slide-up {
+  animation: slide-up 0.4s ease-out;
+}
+
+/* 彩虹进度条 */
+.progress-rainbow {
+  background: linear-gradient(90deg, 
+    #FF6B6B 0%, 
+    #FFD93D 20%, 
+    #6BCB77 40%, 
+    #4D96FF 60%, 
+    #9B59B6 80%, 
+    #FF6B9D 100%
+  );
+}
+
+/* 星星爆炸效果 */
+.star-particle {
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  animation: star-burst 0.6s ease-out forwards;
+}
+
+/* 录音音符跳动 */
+@keyframes note-bounce {
+  0%, 100% { transform: translateY(0) rotate(-10deg); }
+  50% { transform: translateY(-15px) rotate(10deg); }
+}
+
+.note-bounce {
+  animation: note-bounce 0.5s ease-in-out infinite;
+}
+
+/* 触摸友好按钮 */
+.btn-touch {
+  min-width: 64px;
+  min-height: 64px;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* 卡片悬浮效果 */
+.card-hover {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.card-hover:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 24px rgba(255, 179, 71, 0.3);
+}
+
+/* 加载动画 */
+@keyframes spin-slow {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.animate-spin-slow {
+  animation: spin-slow 2s linear infinite;
+}
+
+/* 撒花效果容器 */
+.confetti-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  overflow: hidden;
+  z-index: 9999;
+}
