@@ -108,6 +108,9 @@ export const useProgressStore = create<ProgressStore>()(
 
       updatePracticeStatus: (practiceId, status, score) =>
         set((state) => ({
+          practices: state.practices.map(p => 
+            p.id === practiceId ? { ...p, status } : p
+          ),
           practiceProgress: {
             ...state.practiceProgress,
             [practiceId]: {
