@@ -180,7 +180,7 @@ export default function Lesson() {
       </AnimatePresence>
 
       {/* Main Content - Three Column Layout */}
-      <main className="px-4 py-6">
+      <main className="px-4 pt-24 pb-6">
         <AnimatePresence mode="wait">
           {!showScore ? (
             <motion.div
