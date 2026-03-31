@@ -260,7 +260,7 @@ export default function Lesson() {
                       {cooldown > 0 ? (
                         <span>⏱ {cooldown}秒后可再次练习</span>
                       ) : (
-                        <span>🎸 开始练习</span>
+                        <span>🎸 完成练习</span>
                       )}
                     </motion.button>
                   )}
