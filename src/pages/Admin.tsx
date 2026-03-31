@@ -80,6 +80,7 @@ export default function Admin() {
   }
 
   const changeStatus = (practiceId: string, newStatus: PracticeStatus) => {
+    console.log('Changing status:', practiceId, '->', newStatus)
     updatePracticeStatus(practiceId, newStatus)
   }
 
