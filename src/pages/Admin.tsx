@@ -8,22 +8,22 @@ import SheetView from '../components/SheetView'
 export default function Admin() {
   const navigate = useNavigate()
   const practices = useProgressStore((s) => s.practices)
-  const updatePracticeStatus = useProgressStore((s) => s.updatePracticeStatus)
   const { addPractice, updatePractice, deletePractice } = useProgressStore()
+  const updatePracticeStatus = useProgressStore((s) => s.updatePracticeStatus)
   
   const [editingPractice, setEditingPractice] = useState<Practice | null>(null)
   const [showForm, setShowForm] = useState(false)
 
   // 表单状态
   const [practiceName, setPracticeName] = useState('')
-  const [practiceEmoji, setPracticeEmoji] = useState('🌟')
+  const [practiceEmoji, setPracticeEmoji] = useState('🎸')
   const [practiceDate, setPracticeDate] = useState('')
   const [practiceSheet, setPracticeSheet] = useState<Practice['sheet']>(undefined)
 
   const startNewPractice = () => {
     setEditingPractice(null)
     setPracticeName('')
-    setPracticeEmoji('🌟')
+    setPracticeEmoji('🎸')
     setPracticeDate('')
     setPracticeSheet(undefined)
     setShowForm(true)
@@ -80,9 +80,13 @@ export default function Admin() {
   }
 
   const changeStatus = (practiceId: string, newStatus: PracticeStatus) => {
-    console.log('Changing status:', practiceId, '->', newStatus)
     updatePracticeStatus(practiceId, newStatus)
   }
+
+  // 按状态分组
+  const completedPractices = practices.filter(p => p.status === 'completed')
+  const inProgressPractices = practices.filter(p => p.status === 'in_progress')
+  const pendingPractices = practices.filter(p => p.status === 'pending')
 
   return (
     <div className="min-h-screen bg-background pb-20">
@@ -95,160 +99,223 @@ export default function Admin() {
           >
             ←
           </button>
-          <h1 className="font-heading text-xl text-text">⚙️ 练习管理</h1>
+          <h1 className="font-heading text-xl text-text">⚙️ 课程管理</h1>
         </div>
       </header>
 
       <main className="max-w-4xl mx-auto px-4 py-6">
-        {/* 练习列表 */}
-        <section className="mb-8">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="font-heading text-lg text-text">📚 练习列表</h2>
-            <button
-              className="px-4 py-2 bg-primary text-white rounded-xl text-sm"
-              onClick={startNewPractice}
-            >
-              ➕ 新建练习
-            </button>
-          </div>
-          <div className="space-y-4">
-            {practices.map(practice => (
-              <motion.div
-                key={practice.id}
-                className={`bg-surface rounded-2xl p-4 shadow ${
-                  editingPractice?.id === practice.id ? 'ring-4 ring-primary' : ''
-                }`}
-                whileTap={{ scale: 0.98 }}
-              >
-                <div className="flex items-center gap-3">
-                  <span className="text-3xl">{practice.emoji}</span>
+        {/* 添加按钮 */}
+        <motion.button
+          className="w-full py-4 bg-gradient-to-r from-primary to-highlight text-white rounded-2xl font-bold text-lg shadow-lg mb-8"
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
+          onClick={startNewPractice}
+        >
+          + 添加新课程
+        </motion.button>
+
+        {/* 已完成 */}
+        {completedPractices.length > 0 && (
+          <section className="mb-8">
+            <h2 className="text-lg font-bold text-text mb-4 flex items-center gap-2">
+              <span className="w-6 h-6 rounded-full bg-success text-white text-sm flex items-center justify-center">✓</span>
+              已完成 ({completedPractices.length})
+            </h2>
+            <div className="space-y-3">
+              {completedPractices.map(practice => (
+                <div key={practice.id} className="bg-white rounded-xl p-4 shadow flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl" style={{ backgroundColor: practice.coverColor + '20' }}>
+                    {practice.emoji}
+                  </div>
                   <div className="flex-1">
                     <h3 className="font-semibold text-text">{practice.title}</h3>
-                    <p className="text-text-light text-sm flex items-center gap-2">
-                      📅 {practice.date}
-                      {practice.sheet?.imageUrl && <span>• 🎼 有谱子</span>}
-                    </p>
-                    {/* 状态切换 */}
-                    <div className="flex items-center gap-1 mt-2">
-                      <button
-                        className={`px-2 py-1 rounded text-xs ${
-                          practice.status === 'pending' ? 'bg-gray-300 text-gray-700' : 'bg-gray-100 text-gray-400'
-                        }`}
-                        onClick={() => changeStatus(practice.id, 'pending')}
-                      >
-                        ○ 待练习
-                      </button>
-                      <button
-                        className={`px-2 py-1 rounded text-xs ${
-                          practice.status === 'in_progress' ? 'bg-primary text-white' : 'bg-gray-100 text-gray-400'
-                        }`}
-                        onClick={() => changeStatus(practice.id, 'in_progress')}
-                      >
-                        🔄 练习中
-                      </button>
-                      <button
-                        className={`px-2 py-1 rounded text-xs ${
-                          practice.status === 'completed' ? 'bg-success text-white' : 'bg-gray-100 text-gray-400'
-                        }`}
-                        onClick={() => changeStatus(practice.id, 'completed')}
-                      >
-                        ✅ 完成
-                      </button>
-                    </div>
+                    <p className="text-text-light text-sm">📅 {practice.date}</p>
                   </div>
-                  <button
-                    className="px-3 py-1 bg-secondary text-white rounded-lg text-sm"
-                    onClick={() => startEditPractice(practice)}
+                  <select
+                    value={practice.status}
+                    onChange={(e) => changeStatus(practice.id, e.target.value as PracticeStatus)}
+                    className="px-3 py-1 bg-success/20 text-success rounded-lg text-sm border-0"
                   >
-                    编辑
-                  </button>
-                  <button
-                    className="px-3 py-1 bg-error/20 text-error rounded-lg text-sm"
-                    onClick={() => handleDeletePractice(practice.id)}
-                  >
-                    删除
-                  </button>
+                    <option value="pending">未开始</option>
+                    <option value="in_progress">进行中</option>
+                    <option value="completed">已完成</option>
+                  </select>
+                  <button onClick={() => startEditPractice(practice)} className="text-2xl">✏️</button>
+                  <button onClick={() => handleDeletePractice(practice.id)} className="text-2xl">🗑️</button>
                 </div>
-              </motion.div>
-            ))}
-          </div>
-        </section>
+              ))}
+            </div>
+          </section>
+        )}
 
-        {/* 编辑/新建练习表单 */}
-        {showForm && (
-          <section className="bg-surface rounded-2xl p-6 shadow-lg">
-            <h2 className="font-heading text-lg text-text mb-4">
-              {editingPractice ? '✏️ 编辑练习' : '➕ 新建练习'}
+        {/* 进行中 */}
+        {inProgressPractices.length > 0 && (
+          <section className="mb-8">
+            <h2 className="text-lg font-bold text-text mb-4 flex items-center gap-2">
+              <span className="w-6 h-6 rounded-full bg-primary text-white text-sm flex items-center justify-center">🔄</span>
+              进行中 ({inProgressPractices.length})
             </h2>
-
-            {/* 练习名称 */}
-            <div className="mb-4">
-              <label className="block text-text font-semibold mb-2">练习名称</label>
-              <input
-                type="text"
-                value={practiceName}
-                onChange={(e) => setPracticeName(e.target.value)}
-                placeholder="例如：认识吉他"
-                className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary"
-              />
-            </div>
-
-            {/* 日期 */}
-            <div className="mb-4">
-              <label className="block text-text font-semibold mb-2">日期</label>
-              <input
-                type="date"
-                value={practiceDate}
-                onChange={(e) => setPracticeDate(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary"
-              />
-            </div>
-
-            {/* 图标 */}
-            <div className="mb-4">
-              <label className="block text-text font-semibold mb-2">图标</label>
-              <div className="flex gap-3">
-                {['🌟', '🎸', '🎵', '🎶', '🎤', '🎹', '🪗', '🎼'].map(emoji => (
-                  <button
-                    key={emoji}
-                    className={`w-12 h-12 text-2xl rounded-xl ${
-                      practiceEmoji === emoji ? 'bg-primary ring-2 ring-primary' : 'bg-surface2'
-                    }`}
-                    onClick={() => setPracticeEmoji(emoji)}
+            <div className="space-y-3">
+              {inProgressPractices.map(practice => (
+                <div key={practice.id} className="bg-white rounded-xl p-4 shadow flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl" style={{ backgroundColor: practice.coverColor + '20' }}>
+                    {practice.emoji}
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="font-semibold text-text">{practice.title}</h3>
+                    <p className="text-text-light text-sm">📅 {practice.date}</p>
+                  </div>
+                  <select
+                    value={practice.status}
+                    onChange={(e) => changeStatus(practice.id, e.target.value as PracticeStatus)}
+                    className="px-3 py-1 bg-primary/20 text-primary rounded-lg text-sm border-0"
                   >
-                    {emoji}
-                  </button>
-                ))}
-              </div>
+                    <option value="pending">未开始</option>
+                    <option value="in_progress">进行中</option>
+                    <option value="completed">已完成</option>
+                  </select>
+                  <button onClick={() => startEditPractice(practice)} className="text-2xl">✏️</button>
+                  <button onClick={() => handleDeletePractice(practice.id)} className="text-2xl">🗑️</button>
+                </div>
+              ))}
             </div>
+          </section>
+        )}
 
-            {/* 谱子 */}
-            <div className="mb-6">
-              <label className="block text-text font-semibold mb-2">🎼 谱子</label>
-              <SheetView 
-                sheet={practiceSheet}
-                editable={true}
-                onSheetChange={(sheet) => setPracticeSheet(sheet)}
-              />
-            </div>
-
-            <div className="flex gap-3">
-              <button
-                className="flex-1 py-3 bg-primary text-white rounded-xl font-bold"
-                onClick={savePractice}
-              >
-                保存练习
-              </button>
-              <button
-                className="px-6 py-3 bg-surface2 text-text rounded-xl font-semibold"
-                onClick={() => setShowForm(false)}
-              >
-                取消
-              </button>
+        {/* 未开始 */}
+        {pendingPractices.length > 0 && (
+          <section className="mb-8">
+            <h2 className="text-lg font-bold text-text mb-4 flex items-center gap-2">
+              <span className="w-6 h-6 rounded-full bg-warning text-white text-sm flex items-center justify-center">○</span>
+              未开始 ({pendingPractices.length})
+            </h2>
+            <div className="space-y-3">
+              {pendingPractices.map(practice => (
+                <div key={practice.id} className="bg-white rounded-xl p-4 shadow flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl" style={{ backgroundColor: practice.coverColor + '20' }}>
+                    {practice.emoji}
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="font-semibold text-text">{practice.title}</h3>
+                    <p className="text-text-light text-sm">📅 {practice.date}</p>
+                  </div>
+                  <select
+                    value={practice.status}
+                    onChange={(e) => changeStatus(practice.id, e.target.value as PracticeStatus)}
+                    className="px-3 py-1 bg-warning/20 text-warning rounded-lg text-sm border-0"
+                  >
+                    <option value="pending">未开始</option>
+                    <option value="in_progress">进行中</option>
+                    <option value="completed">已完成</option>
+                  </select>
+                  <button onClick={() => startEditPractice(practice)} className="text-2xl">✏️</button>
+                  <button onClick={() => handleDeletePractice(practice.id)} className="text-2xl">🗑️</button>
+                </div>
+              ))}
             </div>
           </section>
         )}
       </main>
+
+      {/* 编辑/新建弹窗 */}
+      {showForm && (
+        <motion.div
+          className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          onClick={() => setShowForm(false)}
+        >
+          <motion.div
+            className="bg-surface rounded-3xl w-full max-w-lg max-h-[90vh] overflow-y-auto"
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* 头部 */}
+            <div className="p-4 border-b flex items-center justify-between">
+              <h2 className="font-heading text-lg text-text">
+                {editingPractice ? '编辑课程' : '添加新课程'}
+              </h2>
+              <button
+                className="w-10 h-10 rounded-full bg-surface2 flex items-center justify-center text-xl"
+                onClick={() => setShowForm(false)}
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* 表单 */}
+            <div className="p-4 space-y-4">
+              {/* 课程名称 */}
+              <div>
+                <label className="block text-text font-semibold mb-2">课程名称</label>
+                <input
+                  type="text"
+                  value={practiceName}
+                  onChange={(e) => setPracticeName(e.target.value)}
+                  placeholder="输入课程名称"
+                  className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary"
+                />
+              </div>
+
+              {/* 课程日期 */}
+              <div>
+                <label className="block text-text font-semibold mb-2">课程日期</label>
+                <input
+                  type="date"
+                  value={practiceDate}
+                  onChange={(e) => setPracticeDate(e.target.value)}
+                  className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary"
+                />
+              </div>
+
+              {/* 谱子上传 */}
+              <div>
+                <label className="block text-text font-semibold mb-2">谱子图片（可选）</label>
+                <SheetView 
+                  sheet={practiceSheet}
+                  editable={true}
+                  onSheetChange={(sheet) => setPracticeSheet(sheet)}
+                />
+              </div>
+
+              {/* 图标选择 */}
+              <div>
+                <label className="block text-text font-semibold mb-2">课程图标</label>
+                <div className="flex gap-2 flex-wrap">
+                  {['🎸', '🎹', '🥁', '🎺', '🎻', '🎵', '🎶', '🎼', '🌟', '💫', '⭐', '🎤'].map(emoji => (
+                    <button
+                      key={emoji}
+                      className={`w-12 h-12 text-2xl rounded-xl ${
+                        practiceEmoji === emoji ? 'bg-primary ring-2 ring-primary' : 'bg-surface2'
+                      }`}
+                      onClick={() => setPracticeEmoji(emoji)}
+                    >
+                      {emoji}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* 按钮 */}
+              <div className="flex gap-3 pt-4">
+                <button
+                  className="flex-1 py-3 bg-primary text-white rounded-xl font-bold"
+                  onClick={savePractice}
+                >
+                  保存
+                </button>
+                <button
+                  className="px-6 py-3 bg-surface2 text-text rounded-xl font-semibold"
+                  onClick={() => setShowForm(false)}
+                >
+                  取消
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
     </div>
   )
 }
