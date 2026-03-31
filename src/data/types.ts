@@ -3,21 +3,8 @@ export interface Course {
   title: string
   emoji: string
   coverColor: string
-  coverImage?: string
-  lessons: Lesson[]
-}
-
-export interface Lesson {
-  id: string
-  title: string
-  duration: string
-  starsToUnlock: number
-  content: {
-    sheet?: SheetSource
-    chordDiagram?: string
-    musicXml?: string
-  }
-  standardNotes?: Note[]
+  date: string  // 上课日期
+  sheet?: SheetSource
 }
 
 export interface SheetSource {
@@ -27,9 +14,9 @@ export interface SheetSource {
 }
 
 export interface Note {
-  time: number      // seconds
-  string: number    // 1-6 (high E to low E)
-  fret: number      // 0 = open
+  time: number
+  string: number
+  fret: number
   duration?: number
 }
 
@@ -37,8 +24,8 @@ export interface Progress {
   totalStars: number
   earnedBadges: string[]
   outfits: string[]
-  lessons: {
-    [lessonId: string]: {
+  courses: {
+    [courseId: string]: {
       completed: boolean
       bestScore: number
       starsEarned: number
@@ -58,7 +45,7 @@ export interface Reward {
 
 export interface Review {
   id: string
-  lessonId: string
+  courseId: string
   studentId: string
   audioBlob?: Blob
   audioUrl?: string

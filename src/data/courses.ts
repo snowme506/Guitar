@@ -3,25 +3,10 @@ import type { Course, Reward } from './types'
 export const courses: Course[] = [
   {
     id: 'course-1',
-    title: '入门课程',
+    title: '认识吉他',
     emoji: '🌟',
     coverColor: '#FFB347',
-    lessons: [
-      {
-        id: 'lesson-1-1',
-        title: '认识吉他',
-        duration: '待定',
-        starsToUnlock: 0,
-        content: {},
-      },
-      {
-        id: 'lesson-1-2',
-        title: '拨弦练习',
-        duration: '待定',
-        starsToUnlock: 5,
-        content: {},
-      },
-    ],
+    date: '2026-03-30',
   },
 ]
 

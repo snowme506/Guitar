@@ -4,10 +4,10 @@ import type { Progress } from '../data/types'
 
 interface ProgressStore extends Progress {
   addStars: (count: number) => void
-  completeLesson: (lessonId: string, score: number, stars: number) => void
+  completeCourse: (courseId: string, score: number, stars: number) => void
   addBadge: (badgeId: string) => void
   unlockOutfit: (outfitId: string) => void
-  getLessonProgress: (lessonId: string) => Progress['lessons'][string] | undefined
+  getCourseProgress: (courseId: string) => Progress['courses'][string] | undefined
 }
 
 export const useProgressStore = create<ProgressStore>()(
@@ -16,20 +16,20 @@ export const useProgressStore = create<ProgressStore>()(
       totalStars: 0,
       earnedBadges: [],
       outfits: [],
-      lessons: {},
+      courses: {},
 
       addStars: (count: number) => 
         set((state) => ({ totalStars: state.totalStars + count })),
 
-      completeLesson: (lessonId: string, score: number, stars: number) =>
+      completeCourse: (courseId: string, score: number, stars: number) =>
         set((state) => {
-          const existing = state.lessons[lessonId]
+          const existing = state.courses[courseId]
           const isBetter = !existing || score > existing.bestScore
           return {
             totalStars: isBetter ? state.totalStars + stars : state.totalStars,
-            lessons: {
-              ...state.lessons,
-              [lessonId]: {
+            courses: {
+              ...state.courses,
+              [courseId]: {
                 completed: true,
                 bestScore: isBetter ? score : existing?.bestScore ?? 0,
                 starsEarned: isBetter ? stars : existing?.starsEarned ?? 0,
@@ -54,7 +54,7 @@ export const useProgressStore = create<ProgressStore>()(
             : [...state.outfits, outfitId],
         })),
 
-      getLessonProgress: (lessonId: string) => get().lessons[lessonId],
+      getCourseProgress: (courseId: string) => get().courses[courseId],
     }),
     {
       name: 'guitar-progress',

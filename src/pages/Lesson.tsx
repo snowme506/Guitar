@@ -17,12 +17,8 @@ export default function Lesson() {
   const [currentScore, setCurrentScore] = useState(0)
   const [recordingUrl, setRecordingUrl] = useState<string | null>(null)
 
-  // 找到当前课时
-  const lesson = courses
-    .flatMap(c => c.lessons)
-    .find(l => l.id === lessonId)
-
-  const course = courses.find(c => c.lessons.some(l => l.id === lessonId))
+  // 找到当前课程
+  const course = courses.find(c => c.id === lessonId)
 
   const handleRecordingComplete = (_blob: Blob, url: string) => {
     setRecordingUrl(url)
@@ -32,7 +28,7 @@ export default function Lesson() {
     setCurrentScore(score)
     
     // 更新进度
-    useProgressStore.getState().completeLesson(lessonId!, score, stars)
+    useProgressStore.getState().completeCourse(lessonId!, score, stars)
     setShowConfetti(true)
     setShowScore(true)
   }
@@ -43,22 +39,15 @@ export default function Lesson() {
   }
 
   const handleContinue = () => {
-    // 找到下一课
-    const currentIndex = course?.lessons.findIndex(l => l.id === lessonId) ?? -1
-    const nextLesson = course?.lessons[currentIndex + 1]
-    if (nextLesson) {
-      navigate(`/lesson/${nextLesson.id}`)
-    } else {
-      navigate('/')
-    }
+    navigate('/')
   }
 
-  if (!lesson) {
+  if (!course) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
           <p className="text-4xl mb-4">😢</p>
-          <p className="text-text">找不到这节课</p>
+          <p className="text-text">找不到这个课程</p>
           <button
             className="mt-4 px-6 py-2 bg-primary text-white rounded-xl"
             onClick={() => navigate('/')}
@@ -82,10 +71,8 @@ export default function Lesson() {
             ←
           </button>
           <div>
-            <h1 className="font-heading text-lg text-text">{lesson.title}</h1>
-            {course && (
-              <p className="text-text-light text-sm">{course.title}</p>
-            )}
+            <h1 className="font-heading text-lg text-text">{course.title}</h1>
+            <p className="text-text-light text-sm">📅 {course.date}</p>
           </div>
         </div>
       </header>
@@ -132,7 +119,7 @@ export default function Lesson() {
               <div className="col-span-12 lg:col-span-6 order-1 lg:order-2">
                 <div className="bg-surface rounded-2xl p-4 shadow-lg">
                   <h3 className="font-heading text-lg text-text mb-3 text-center">🎼 跟弹谱子</h3>
-                  <SheetView sheet={lesson.content.sheet} />
+                  <SheetView sheet={course.sheet} />
                 </div>
               </div>
 
