@@ -10,14 +10,14 @@ export const courses: Course[] = [
       {
         id: 'lesson-1-1',
         title: '认识吉他',
-        duration: 120,
+        duration: '待定',
         starsToUnlock: 0,
         content: {},
       },
       {
         id: 'lesson-1-2',
         title: '拨弦练习',
-        duration: 180,
+        duration: '待定',
         starsToUnlock: 5,
         content: {},
       },

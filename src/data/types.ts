@@ -10,7 +10,7 @@ export interface Course {
 export interface Lesson {
   id: string
   title: string
-  duration: number
+  duration: string
   starsToUnlock: number
   content: {
     sheet?: SheetSource

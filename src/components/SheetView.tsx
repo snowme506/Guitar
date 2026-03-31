@@ -3,11 +3,10 @@ import type { SheetSource } from '../data/types'
 
 interface SheetViewProps {
   sheet?: SheetSource
-  onSheetChange?: (sheet: SheetSource) => void
   editable?: boolean
 }
 
-export default function SheetView({ sheet, onSheetChange, editable = false }: SheetViewProps) {
+export default function SheetView({ sheet, editable = false }: SheetViewProps) {
   const [imageUrl, setImageUrl] = useState<string | null>(sheet?.imageUrl ?? null)
   const [isDragging, setIsDragging] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -20,11 +19,6 @@ export default function SheetView({ sheet, onSheetChange, editable = false }: Sh
 
     const url = URL.createObjectURL(file)
     setImageUrl(url)
-    onSheetChange?.({
-      type: 'upload',
-      localPath: url,
-      imageUrl: url,
-    })
   }
 
   const handleDrop = (e: React.DragEvent) => {
@@ -32,17 +26,6 @@ export default function SheetView({ sheet, onSheetChange, editable = false }: Sh
     setIsDragging(false)
     const file = e.dataTransfer.files[0]
     if (file) handleFileSelect(file)
-  }
-
-  const handlePasteUrl = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const url = e.target.value.trim()
-    if (url) {
-      setImageUrl(url)
-      onSheetChange?.({
-        type: 'url',
-        imageUrl: url,
-      })
-    }
   }
 
   if (!editable && !imageUrl) {
@@ -61,7 +44,7 @@ export default function SheetView({ sheet, onSheetChange, editable = false }: Sh
         <div className="p-4 border-b border-gray-100">
           {/* 拖拽上传区 */}
           <div
-            className={`border-2 border-dashed rounded-xl p-6 text-center transition-colors ${
+            className={`border-2 border-dashed rounded-xl p-6 text-center transition-colors cursor-pointer ${
               isDragging ? 'border-primary bg-primary/10' : 'border-gray-300'
             }`}
             onDragOver={(e) => { e.preventDefault(); setIsDragging(true) }}
@@ -85,18 +68,6 @@ export default function SheetView({ sheet, onSheetChange, editable = false }: Sh
               }}
             />
           </div>
-
-          {/* 或粘贴 URL */}
-          <div className="mt-4">
-            <p className="text-text-light text-sm mb-2">或粘贴图片/谱子网址：</p>
-            <input
-              type="url"
-              placeholder="https://..."
-              className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary"
-              onChange={handlePasteUrl}
-            />
-          </div>
-
         </div>
       )}
 

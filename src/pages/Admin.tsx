@@ -2,27 +2,25 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { courses as initialCourses } from '../data/courses'
-import type { Course, Lesson } from '../data/types'
-import SheetSearchWebView from '../components/SheetSearchWebView'
+import type { Course } from '../data/types'
 
 export default function Admin() {
   const navigate = useNavigate()
   const [courses, setCourses] = useState(initialCourses)
   const [editingCourse, setEditingCourse] = useState<Course | null>(null)
-  const [showSheetSearch, setShowSheetSearch] = useState(false)
 
   // 课程表单状态
   const [courseName, setCourseName] = useState('')
   const [courseEmoji, setCourseEmoji] = useState('🌟')
   const [lessonName, setLessonName] = useState('')
-  const [sheetUrl, setSheetUrl] = useState('')
+  const [classTime, setClassTime] = useState('')
 
   const startNewCourse = () => {
     setEditingCourse(null)
     setCourseName('')
     setCourseEmoji('🌟')
     setLessonName('')
-    setSheetUrl('')
+    setClassTime('')
   }
 
   const startEditCourse = (course: Course) => {
@@ -30,7 +28,7 @@ export default function Admin() {
     setCourseName(course.title)
     setCourseEmoji(course.emoji)
     setLessonName('')
-    setSheetUrl('')
+    setClassTime('')
   }
 
   const saveCourse = () => {
@@ -40,7 +38,6 @@ export default function Admin() {
     }
 
     if (editingCourse) {
-      // 更新现有课程
       setCourses(prev => prev.map(c => 
         c.id === editingCourse.id 
           ? { ...c, title: courseName, emoji: courseEmoji }
@@ -48,7 +45,6 @@ export default function Admin() {
       ))
       alert('课程已更新')
     } else {
-      // 新建课程
       const newCourse: Course = {
         id: `course-${Date.now()}`,
         title: courseName,
@@ -72,14 +68,12 @@ export default function Admin() {
       return
     }
 
-    const newLesson: Lesson = {
+    const newLesson = {
       id: `lesson-${Date.now()}`,
       title: lessonName,
-      duration: 180,
+      duration: classTime || '待定',
       starsToUnlock: 0,
-      content: {
-        sheet: sheetUrl ? { type: 'url', imageUrl: sheetUrl } : undefined,
-      },
+      content: {},
     }
 
     setCourses(prev => prev.map(c => 
@@ -88,13 +82,8 @@ export default function Admin() {
         : c
     ))
     setLessonName('')
-    setSheetUrl('')
+    setClassTime('')
     alert('课时已添加')
-  }
-
-  const handleSheetSearch = (url: string) => {
-    setSheetUrl(url)
-    setShowSheetSearch(false)
   }
 
   return (
@@ -158,8 +147,8 @@ export default function Admin() {
                         <div key={lesson.id} className="flex items-center gap-2 text-sm">
                           <span className="text-text-light">{idx + 1}.</span>
                           <span className="text-text">{lesson.title}</span>
-                          {lesson.content.sheet?.imageUrl && (
-                            <span className="text-success">✓ 有谱子</span>
+                          {lesson.duration && (
+                            <span className="text-primary text-xs">⏰ {lesson.duration}</span>
                           )}
                         </div>
                       ))}
@@ -172,7 +161,7 @@ export default function Admin() {
         </section>
 
         {/* 编辑/新建课程 */}
-        {(editingCourse !== null || courseName !== '' || editingCourse !== null) && (
+        {(editingCourse !== null || courseName !== '') && (
           <section className="bg-surface rounded-2xl p-6 shadow-lg">
             <h2 className="font-heading text-lg text-text mb-4">
               {editingCourse ? '✏️ 编辑课程' : '➕ 新建课程'}
@@ -231,28 +220,15 @@ export default function Admin() {
                   />
                 </div>
 
-                {/* 谱子 */}
                 <div className="mb-4">
-                  <label className="block text-text font-semibold mb-2">🎼 谱子</label>
-                  {sheetUrl ? (
-                    <div className="flex items-center gap-2 bg-accent/20 p-3 rounded-xl">
-                      <span className="text-accent">✓</span>
-                      <span className="text-sm text-text flex-1 truncate">{sheetUrl}</span>
-                      <button
-                        className="text-sm text-error"
-                        onClick={() => setSheetUrl('')}
-                      >
-                        清除
-                      </button>
-                    </div>
-                  ) : (
-                    <button
-                      className="w-full py-3 bg-secondary text-white rounded-xl font-semibold"
-                      onClick={() => setShowSheetSearch(true)}
-                    >
-                      🔍 搜索谱子
-                    </button>
-                  )}
+                  <label className="block text-text font-semibold mb-2">上课时间</label>
+                  <input
+                    type="text"
+                    value={classTime}
+                    onChange={(e) => setClassTime(e.target.value)}
+                    placeholder="例如：周一 10:00"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary"
+                  />
                 </div>
 
                 <button
@@ -266,13 +242,6 @@ export default function Admin() {
           </section>
         )}
       </main>
-
-      {/* 网络搜索谱子 */}
-      <SheetSearchWebView
-        isOpen={showSheetSearch}
-        onClose={() => setShowSheetSearch(false)}
-        onSelectSheet={handleSheetSearch}
-      />
     </div>
   )
 }

@@ -8,7 +8,6 @@ import SheetView from '../components/SheetView'
 import RecordButton from '../components/RecordButton'
 import ScoreCard from '../components/ScoreCard'
 import Confetti from '../components/Confetti'
-import SheetSearchWebView from '../components/SheetSearchWebView'
 
 export default function Lesson() {
   const { lessonId } = useParams<{ lessonId: string }>()
@@ -16,7 +15,6 @@ export default function Lesson() {
   const [showConfetti, setShowConfetti] = useState(false)
   const [showScore, setShowScore] = useState(false)
   const [currentScore, setCurrentScore] = useState(0)
-  const [showSheetSearch, setShowSheetSearch] = useState(false)
   const [recordingUrl, setRecordingUrl] = useState<string | null>(null)
 
   // 找到当前课时
@@ -122,12 +120,6 @@ export default function Lesson() {
                   <div className="space-y-3">
                     <button
                       className="w-full py-3 bg-surface2 text-text rounded-xl font-semibold flex items-center justify-center gap-2"
-                      onClick={() => setShowSheetSearch(true)}
-                    >
-                      🔍 搜索谱子
-                    </button>
-                    <button
-                      className="w-full py-3 bg-surface2 text-text rounded-xl font-semibold flex items-center justify-center gap-2"
                       onClick={() => navigate('/')}
                     >
                       🏠 返回首页
@@ -180,16 +172,6 @@ export default function Lesson() {
           )}
         </AnimatePresence>
       </main>
-
-      {/* WebView 搜索弹窗 */}
-      <SheetSearchWebView
-        isOpen={showSheetSearch}
-        onClose={() => setShowSheetSearch(false)}
-        onSelectSheet={(url) => {
-          // TODO: 更新课时谱子
-          console.log('Selected sheet:', url)
-        }}
-      />
     </div>
   )
 }
