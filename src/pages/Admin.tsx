@@ -78,12 +78,6 @@ export default function Admin() {
     }
   }
 
-  const getStatusBadge = (status: PracticeStatus) => {
-    if (status === 'completed') return '✅ 已完成'
-    if (status === 'in_progress') return '🔄 练习中'
-    return '○ 待练习'
-  }
-
   const changeStatus = (practiceId: string, newStatus: PracticeStatus) => {
     useProgressStore.getState().updatePracticeStatus(practiceId, newStatus)
   }
