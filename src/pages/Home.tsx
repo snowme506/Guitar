@@ -37,6 +37,13 @@ export default function Home() {
             >
               🏆
             </button>
+            <button 
+              className="w-10 h-10 rounded-full bg-surface2 flex items-center justify-center text-sm"
+              onClick={() => navigate('/admin')}
+              title="家长入口"
+            >
+              ⚙️
+            </button>
           </div>
         </div>
       </header>
