@@ -1,35 +1,4 @@
-import type { Practice, Reward } from './types'
-
-export const practices: Practice[] = [
-  {
-    id: 'practice-1',
-    title: '认识吉他',
-    emoji: '🌟',
-    coverColor: '#FFB347',
-    date: '2026-03-30',
-    status: 'completed',
-    score: 85,
-    attempts: 1,
-  },
-  {
-    id: 'practice-2',
-    title: '拨弦练习',
-    emoji: '🎸',
-    coverColor: '#87CEEB',
-    date: '2026-03-31',
-    status: 'in_progress',
-    attempts: 1,
-  },
-  {
-    id: 'practice-3',
-    title: '和弦入门',
-    emoji: '🎵',
-    coverColor: '#98D8AA',
-    date: '2026-03-31',
-    status: 'pending',
-    attempts: 0,
-  },
-]
+import type { Reward } from './types'
 
 export const rewards: Reward[] = [
   { id: 'hat', name: '弹弹的帽子', cost: 10, type: 'outfit', emoji: '🎩' },

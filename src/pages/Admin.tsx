@@ -1,13 +1,15 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { practices as initialPractices } from '../data/courses'
+import { useProgressStore } from '../stores/progressStore'
 import type { Practice, PracticeStatus } from '../data/types'
 import SheetView from '../components/SheetView'
 
 export default function Admin() {
   const navigate = useNavigate()
-  const [practices, setPractices] = useState(initialPractices)
+  const practices = useProgressStore((s) => s.practices)
+  const { addPractice, updatePractice, deletePractice } = useProgressStore()
+  
   const [editingPractice, setEditingPractice] = useState<Practice | null>(null)
   const [showForm, setShowForm] = useState(false)
 
@@ -46,32 +48,30 @@ export default function Admin() {
     }
 
     if (editingPractice) {
-      setPractices(prev => prev.map(p => 
-        p.id === editingPractice.id 
-          ? { ...p, title: practiceName, emoji: practiceEmoji, date: practiceDate, sheet: practiceSheet }
-          : p
-      ))
+      updatePractice(editingPractice.id, {
+        title: practiceName,
+        emoji: practiceEmoji,
+        date: practiceDate,
+        sheet: practiceSheet,
+      })
       alert('练习已更新')
     } else {
-      const newPractice: Practice = {
+      addPractice({
         id: `practice-${Date.now()}`,
         title: practiceName,
         emoji: practiceEmoji,
         coverColor: '#FFB347',
         date: practiceDate,
         sheet: practiceSheet,
-        status: 'pending',
-        attempts: 0,
-      }
-      setPractices(prev => [...prev, newPractice])
+      })
       alert('练习已添加')
     }
     setShowForm(false)
   }
 
-  const deletePractice = (practiceId: string) => {
+  const handleDeletePractice = (practiceId: string) => {
     if (confirm('确定删除这个练习吗？')) {
-      setPractices(prev => prev.filter(p => p.id !== practiceId))
+      deletePractice(practiceId)
       if (editingPractice?.id === practiceId) {
         setShowForm(false)
       }
@@ -138,7 +138,7 @@ export default function Admin() {
                   </button>
                   <button
                     className="px-3 py-1 bg-error/20 text-error rounded-lg text-sm"
-                    onClick={() => deletePractice(practice.id)}
+                    onClick={() => handleDeletePractice(practice.id)}
                   >
                     删除
                   </button>

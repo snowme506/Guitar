@@ -1,15 +1,15 @@
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { Trophy } from 'lucide-react'
-import { practices } from '../data/courses'
 import { useProgressStore } from '../stores/progressStore'
 import TantanMascot from '../components/TantanMascot'
 import StarDisplay from '../components/StarDisplay'
 
 export default function Home() {
   const navigate = useNavigate()
+  const practices = useProgressStore((s) => s.practices)
   const totalStars = useProgressStore((s) => s.totalStars)
-  const practiceProgress = useProgressStore((s) => s.practices)
+  const practiceProgress = useProgressStore((s) => s.practiceProgress)
 
   // 根据状态分组
   const getStatus = (id: string) => practiceProgress[id]?.status || 'pending'

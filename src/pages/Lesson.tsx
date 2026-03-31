@@ -2,7 +2,6 @@ import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ArrowLeft } from 'lucide-react'
-import { practices } from '../data/courses'
 import { useProgressStore } from '../stores/progressStore'
 import TantanMascot from '../components/TantanMascot'
 import SheetView from '../components/SheetView'
@@ -13,17 +12,23 @@ import Confetti from '../components/Confetti'
 export default function Lesson() {
   const { lessonId } = useParams<{ lessonId: string }>()
   const navigate = useNavigate()
+  
+  const practices = useProgressStore((s) => s.practices)
+  const practiceProgress = useProgressStore((s) => s.practiceProgress)
+  const completePractice = useProgressStore((s) => s.completePractice)
+  const updatePracticeStatus = useProgressStore((s) => s.updatePracticeStatus)
+  
   const [showConfetti, setShowConfetti] = useState(false)
   const [showScore, setShowScore] = useState(false)
   const [currentScore, setCurrentScore] = useState(0)
   const [recordingUrl, setRecordingUrl] = useState<string | null>(null)
-  const practiceProgress = useProgressStore((s) => s.practices)
-  const completePractice = useProgressStore((s) => s.completePractice)
-  const updatePracticeStatus = useProgressStore((s) => s.updatePracticeStatus)
 
   // 找到当前练习
   const practice = practices.find(p => p.id === lessonId)
-  const currentStatus = (_practiceId: string) => practiceProgress[lessonId!]?.status || 'pending'
+  
+  const getCurrentStatus = () => {
+    return practiceProgress[lessonId!]?.status || 'pending'
+  }
 
   const handleRecordingComplete = (_blob: Blob, url: string) => {
     setRecordingUrl(url)
@@ -65,17 +70,17 @@ export default function Lesson() {
     )
   }
 
+  const currentStatus = getCurrentStatus()
+
   const getStatusLabel = () => {
-    const status = currentStatus(practice.id)
-    if (status === 'completed') return '✅ 已完成'
-    if (status === 'in_progress') return '🔄 练习中'
+    if (currentStatus === 'completed') return '✅ 已完成'
+    if (currentStatus === 'in_progress') return '🔄 练习中'
     return '○ 待练习'
   }
 
   const getStatusColor = () => {
-    const status = currentStatus(practice.id)
-    if (status === 'completed') return 'text-success'
-    if (status === 'in_progress') return 'text-primary'
+    if (currentStatus === 'completed') return 'text-success'
+    if (currentStatus === 'in_progress') return 'text-primary'
     return 'text-text-light'
   }
 
