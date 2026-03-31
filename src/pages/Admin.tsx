@@ -84,6 +84,10 @@ export default function Admin() {
     return '○ 待练习'
   }
 
+  const changeStatus = (practiceId: string, newStatus: PracticeStatus) => {
+    useProgressStore.getState().updatePracticeStatus(practiceId, newStatus)
+  }
+
   return (
     <div className="min-h-screen bg-background pb-20">
       {/* 顶部导航 */}
@@ -126,9 +130,35 @@ export default function Admin() {
                     <h3 className="font-semibold text-text">{practice.title}</h3>
                     <p className="text-text-light text-sm flex items-center gap-2">
                       📅 {practice.date}
-                      <span className="ml-2">{getStatusBadge(practice.status)}</span>
                       {practice.sheet?.imageUrl && <span>• 🎼 有谱子</span>}
                     </p>
+                    {/* 状态切换 */}
+                    <div className="flex items-center gap-1 mt-2">
+                      <button
+                        className={`px-2 py-1 rounded text-xs ${
+                          practice.status === 'pending' ? 'bg-gray-300 text-gray-700' : 'bg-gray-100 text-gray-400'
+                        }`}
+                        onClick={() => changeStatus(practice.id, 'pending')}
+                      >
+                        ○ 待练习
+                      </button>
+                      <button
+                        className={`px-2 py-1 rounded text-xs ${
+                          practice.status === 'in_progress' ? 'bg-primary text-white' : 'bg-gray-100 text-gray-400'
+                        }`}
+                        onClick={() => changeStatus(practice.id, 'in_progress')}
+                      >
+                        🔄 练习中
+                      </button>
+                      <button
+                        className={`px-2 py-1 rounded text-xs ${
+                          practice.status === 'completed' ? 'bg-success text-white' : 'bg-gray-100 text-gray-400'
+                        }`}
+                        onClick={() => changeStatus(practice.id, 'completed')}
+                      >
+                        ✅ 完成
+                      </button>
+                    </div>
                   </div>
                   <button
                     className="px-3 py-1 bg-secondary text-white rounded-lg text-sm"
