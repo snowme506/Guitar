@@ -3,7 +3,17 @@ import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { useProgressStore } from '../stores/progressStore'
 import type { Practice, PracticeStatus } from '../data/types'
-import SheetView from '../components/SheetView'
+
+const COLORS = [
+  { name: '橙色', value: '#FFB347' },
+  { name: '浅蓝', value: '#87CEEB' },
+  { name: '浅绿', value: '#98D8AA' },
+  { name: '粉红', value: '#FFB6C1' },
+  { name: '淡紫', value: '#DDA0DD' },
+  { name: '珊瑚色', value: '#FF7F7F' },
+  { name: '天蓝', value: '#87CEFA' },
+  { name: '薄荷绿', value: '#98FB98' },
+]
 
 export default function Admin() {
   const navigate = useNavigate()
@@ -17,15 +27,15 @@ export default function Admin() {
   // 表单状态
   const [practiceName, setPracticeName] = useState('')
   const [practiceEmoji, setPracticeEmoji] = useState('🎸')
+  const [practiceColor, setPracticeColor] = useState('#FFB347')
   const [practiceDate, setPracticeDate] = useState('')
-  const [practiceSheet, setPracticeSheet] = useState<Practice['sheet']>(undefined)
 
   const startNewPractice = () => {
     setEditingPractice(null)
     setPracticeName('')
     setPracticeEmoji('🎸')
+    setPracticeColor('#FFB347')
     setPracticeDate('')
-    setPracticeSheet(undefined)
     setShowForm(true)
   }
 
@@ -33,14 +43,14 @@ export default function Admin() {
     setEditingPractice(practice)
     setPracticeName(practice.title)
     setPracticeEmoji(practice.emoji)
+    setPracticeColor(practice.coverColor)
     setPracticeDate(practice.date)
-    setPracticeSheet(practice.sheet)
     setShowForm(true)
   }
 
   const savePractice = () => {
     if (!practiceName.trim()) {
-      alert('请输入练习名称')
+      alert('请输入课程名称')
       return
     }
     if (!practiceDate.trim()) {
@@ -52,20 +62,19 @@ export default function Admin() {
       updatePractice(editingPractice.id, {
         title: practiceName,
         emoji: practiceEmoji,
+        coverColor: practiceColor,
         date: practiceDate,
-        sheet: practiceSheet,
       })
-      alert('练习已更新')
+      alert('课程已更新')
     } else {
       addPractice({
         id: `practice-${Date.now()}`,
         title: practiceName,
         emoji: practiceEmoji,
-        coverColor: '#FFB347',
+        coverColor: practiceColor,
         date: practiceDate,
-        sheet: practiceSheet,
       })
-      alert('练习已添加')
+      alert('课程已添加')
     }
     setShowForm(false)
   }
@@ -248,7 +257,7 @@ export default function Admin() {
             <div className="p-4 space-y-4">
               {/* 课程名称 */}
               <div>
-                <label className="block text-text font-semibold mb-2">课程名称</label>
+                <label className="block text-text font-semibold mb-2">📝 课程名称</label>
                 <input
                   type="text"
                   value={practiceName}
@@ -260,7 +269,7 @@ export default function Admin() {
 
               {/* 课程日期 */}
               <div>
-                <label className="block text-text font-semibold mb-2">课程日期</label>
+                <label className="block text-text font-semibold mb-2">📅 课程日期</label>
                 <input
                   type="date"
                   value={practiceDate}
@@ -269,30 +278,44 @@ export default function Admin() {
                 />
               </div>
 
-              {/* 谱子上传 */}
+              {/* 课程图标 */}
               <div>
-                <label className="block text-text font-semibold mb-2">谱子图片（可选）</label>
-                <SheetView 
-                  sheet={practiceSheet}
-                  editable={true}
-                  onSheetChange={(sheet) => setPracticeSheet(sheet)}
-                />
-              </div>
-
-              {/* 图标选择 */}
-              <div>
-                <label className="block text-text font-semibold mb-2">课程图标</label>
+                <label className="block text-text font-semibold mb-2">🎯 课程图标</label>
                 <div className="flex gap-2 flex-wrap">
                   {['🎸', '🎹', '🥁', '🎺', '🎻', '🎵', '🎶', '🎼', '🌟', '💫', '⭐', '🎤'].map(emoji => (
                     <button
                       key={emoji}
                       className={`w-12 h-12 text-2xl rounded-xl ${
-                        practiceEmoji === emoji ? 'bg-primary ring-2 ring-primary' : 'bg-surface2'
+                        practiceEmoji === emoji ? 'ring-2 ring-primary' : ''
                       }`}
+                      style={{ backgroundColor: practiceEmoji === emoji ? practiceColor + '40' : '#f5f5f5' }}
                       onClick={() => setPracticeEmoji(emoji)}
                     >
                       {emoji}
                     </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* 卡片颜色 */}
+              <div>
+                <label className="block text-text font-semibold mb-2">🎨 卡片颜色</label>
+                <div className="flex gap-3">
+                  {COLORS.map(color => (
+                    <button
+                      key={color.name}
+                      className={`w-10 h-10 rounded-full ${
+                        color.value === '#FFB347' ? 'bg-[#FFB347]' :
+                        color.value === '#87CEEB' ? 'bg-[#87CEEB]' :
+                        color.value === '#98D8AA' ? 'bg-[#98D8AA]' :
+                        color.value === '#FFB6C1' ? 'bg-[#FFB6C1]' :
+                        color.value === '#DDA0DD' ? 'bg-[#DDA0DD]' :
+                        color.value === '#FF7F7F' ? 'bg-[#FF7F7F]' :
+                        color.value === '#87CEFA' ? 'bg-[#87CEFA]' :
+                        'bg-[#98FB98]'
+                      } ${practiceColor === color.value ? 'ring-2 ring-gray-400' : ''}`}
+                      onClick={() => setPracticeColor(color.value)}
+                    />
                   ))}
                 </div>
               </div>
@@ -303,7 +326,7 @@ export default function Admin() {
                   className="flex-1 py-3 bg-primary text-white rounded-xl font-bold"
                   onClick={savePractice}
                 >
-                  保存
+                  ✓ 保存课程
                 </button>
                 <button
                   className="px-6 py-3 bg-surface2 text-text rounded-xl font-semibold"
