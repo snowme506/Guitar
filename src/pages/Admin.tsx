@@ -5,11 +5,10 @@ import { courses } from '../data/courses'
 import { useMissionStore } from '../stores/missionStore'
 import { useDailyMissionStore } from '../stores/dailyMissionStore'
 import { useProgressStore } from '../stores/progressStore'
-import SheetSearchWebView from '../components/SheetSearchWebView'
+
 
 export default function Admin() {
   const navigate = useNavigate()
-  const [showSheetSearch, setShowSheetSearch] = useState(false)
   const [activeTab, setActiveTab] = useState<'daily' | 'missions'>('daily')
   const { missions, resetMissions } = useMissionStore()
   const { todayMission, initializeDailyMission } = useDailyMissionStore()
@@ -287,14 +286,6 @@ export default function Admin() {
         )}
       </main>
 
-      {/* 网络搜索 */}
-      <SheetSearchWebView
-        isOpen={showSheetSearch}
-        onClose={() => setShowSheetSearch(false)}
-        onSelectSheet={(url) => {
-          console.log('Selected sheet:', url)
-        }}
-      />
     </div>
   )
 }

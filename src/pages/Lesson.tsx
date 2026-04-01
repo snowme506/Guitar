@@ -10,7 +10,7 @@ import SheetView from '../components/SheetView'
 import RecordButton from '../components/RecordButton'
 import ScoreCard from '../components/ScoreCard'
 import Confetti from '../components/Confetti'
-import SheetSearchWebView from '../components/SheetSearchWebView'
+
 
 export default function Lesson() {
   const { lessonId } = useParams<{ lessonId: string }>()
@@ -18,7 +18,7 @@ export default function Lesson() {
   const [showConfetti, setShowConfetti] = useState(false)
   const [showScore, setShowScore] = useState(false)
   const [currentScore, setCurrentScore] = useState(0)
-  const [showSheetSearch, setShowSheetSearch] = useState(false)
+
   const [recordingUrl, setRecordingUrl] = useState<string | null>(null)
 
   // 从任务获取课时内容（任务直接包含所有内容）
@@ -126,15 +126,7 @@ export default function Lesson() {
             >
               {/* 谱子 */}
               <div>
-                <div className="flex items-center justify-between mb-3">
-                  <h3 className="font-heading text-lg text-text">🎼 {lessonContent.chordDiagram || '跟弹谱子'}</h3>
-                  <button
-                    className="text-sm bg-secondary text-white px-3 py-1 rounded-full"
-                    onClick={() => setShowSheetSearch(true)}
-                  >
-                    🔍 搜索
-                  </button>
-                </div>
+                <h3 className="font-heading text-lg text-text mb-3">🎼 {lessonContent.chordDiagram || '跟弹谱子'}</h3>
                 <SheetView 
                   sheet={lessonContent.sheet as any}
                 />
@@ -181,16 +173,6 @@ export default function Lesson() {
           )}
         </AnimatePresence>
       </main>
-
-      {/* WebView 搜索弹窗 */}
-      <SheetSearchWebView
-        isOpen={showSheetSearch}
-        onClose={() => setShowSheetSearch(false)}
-        onSelectSheet={(url) => {
-          // TODO: 更新课时谱子
-          console.log('Selected sheet:', url)
-        }}
-      />
     </div>
   )
 }
