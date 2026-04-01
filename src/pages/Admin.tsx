@@ -31,7 +31,7 @@ export default function Admin() {
       ...course,
       lessons: course.lessons.filter(lesson => {
         const config = lessonConfigs[lesson.id]
-        return !config?.hidden
+        return config?.hidden !== true
       })
     }))
     .filter(course => course.lessons.length > 0)
