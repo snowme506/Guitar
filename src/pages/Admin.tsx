@@ -5,11 +5,32 @@ import { courses } from '../data/courses'
 import type { Course } from '../data/types'
 import SheetView from '../components/SheetView'
 import SheetSearchWebView from '../components/SheetSearchWebView'
+import { useMissionStore, type Mission } from '../stores/missionStore'
 
 export default function Admin() {
   const navigate = useNavigate()
   const [showSheetSearch, setShowSheetSearch] = useState(false)
   const [_editingCourse, setEditingCourse] = useState<Course | null>(null)
+  const [activeTab, setActiveTab] = useState<'courses' | 'missions'>('courses')
+  const { missions, resetMissions, completeMission, startMission } = useMissionStore()
+
+  const getStatusColor = (status: Mission['status']) => {
+    switch (status) {
+      case 'completed': return 'bg-green-100 text-green-700'
+      case 'inProgress': return 'bg-orange-100 text-orange-700'
+      case 'available': return 'bg-yellow-100 text-yellow-700'
+      case 'locked': return 'bg-gray-100 text-gray-500'
+    }
+  }
+
+  const getStatusText = (status: Mission['status']) => {
+    switch (status) {
+      case 'completed': return '已完成'
+      case 'inProgress': return '进行中'
+      case 'available': return '可挑战'
+      case 'locked': return '已锁定'
+    }
+  }
 
   return (
     <div className="min-h-screen bg-background pb-20">
@@ -22,11 +43,43 @@ export default function Admin() {
           >
             ←
           </button>
-          <h1 className="font-heading text-xl text-text">⚙️ 课程管理</h1>
+          <h1 className="font-heading text-xl text-text">⚙️ 管理后台</h1>
         </div>
       </header>
 
       <main className="max-w-4xl mx-auto px-4 py-6">
+        {/* 切换标签 */}
+        <div className="flex gap-2 p-1 bg-surface rounded-2xl mb-6">
+          <button
+            onClick={() => setActiveTab('courses')}
+            className={`
+              flex-1 py-2 px-4 rounded-xl font-bold text-sm
+              transition-all duration-200
+              ${activeTab === 'courses'
+                ? 'bg-primary text-white'
+                : 'text-text hover:bg-surface2'
+              }
+            `}
+          >
+            📚 课程管理
+          </button>
+          <button
+            onClick={() => setActiveTab('missions')}
+            className={`
+              flex-1 py-2 px-4 rounded-xl font-bold text-sm
+              transition-all duration-200
+              ${activeTab === 'missions'
+                ? 'bg-primary text-white'
+                : 'text-text hover:bg-surface2'
+              }
+            `}
+          >
+            🎯 任务管理
+          </button>
+        </div>
+
+        {activeTab === 'courses' ? (
+        <>
         {/* 课程列表 */}
         <section className="mb-8">
           <h2 className="font-heading text-lg text-text mb-4">📚 课程列表</h2>
@@ -96,6 +149,103 @@ export default function Admin() {
             </button>
           </motion.div>
         </section>
+        </>
+        ) : (
+        <>
+        {/* 任务管理 */}
+        <section className="mb-8">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="font-heading text-lg text-text">🎯 任务列表</h2>
+            <button
+              onClick={() => {
+                if (confirm('确定要重置所有任务吗？这将清空所有进度。')) {
+                  resetMissions()
+                }
+              }}
+              className="px-3 py-1 bg-red-100 text-red-600 rounded-lg text-sm"
+            >
+              🔄 重置任务
+            </button>
+          </div>
+          
+          <div className="space-y-3">
+            {missions.map((mission) => (
+              <motion.div
+                key={mission.id}
+                className="bg-surface rounded-2xl p-4 shadow"
+                whileTap={{ scale: 0.98 }}
+              >
+                <div className="flex items-center gap-3">
+                  <span className="text-2xl">{mission.emoji}</span>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-1">
+                      <h3 className="font-semibold text-text">{mission.title}</h3>
+                      <span className={`px-2 py-0.5 rounded-full text-xs ${getStatusColor(mission.status)}`}>
+                        {getStatusText(mission.status)}
+                      </span>
+                    </div>
+                    <p className="text-text-light text-sm line-clamp-1">
+                      {mission.description}
+                    </p>
+                    <div className="flex items-center gap-2 mt-1">
+                      <span className="text-xs text-text-light">奖励:</span>
+                      <span className="text-sm">{'⭐'.repeat(mission.starReward)}</span>
+                    </div>
+                  </div>
+                  <div className="flex flex-col gap-2">
+                    {mission.status === 'locked' && (
+                      <button
+                        onClick={() => startMission(mission.id)}
+                        className="px-3 py-1 bg-yellow-100 text-yellow-700 rounded-lg text-xs"
+                      >
+                        解锁
+                      </button>
+                    )}
+                    {(mission.status === 'available' || mission.status === 'inProgress') && (
+                      <button
+                        onClick={() => completeMission(mission.id)}
+                        className="px-3 py-1 bg-green-100 text-green-700 rounded-lg text-xs"
+                      >
+                        完成
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </section>
+
+        {/* 任务统计 */}
+        <section className="bg-surface rounded-2xl p-4 shadow">
+          <h3 className="font-heading text-lg text-text mb-4">📊 任务统计</h3>
+          <div className="grid grid-cols-4 gap-4 text-center">
+            <div className="bg-gray-100 rounded-xl p-3">
+              <div className="text-2xl font-bold text-primary">{missions.length}</div>
+              <div className="text-xs text-text-light">总任务</div>
+            </div>
+            <div className="bg-green-100 rounded-xl p-3">
+              <div className="text-2xl font-bold text-green-600">
+                {missions.filter(m => m.status === 'completed').length}
+              </div>
+              <div className="text-xs text-text-light">已完成</div>
+            </div>
+            <div className="bg-orange-100 rounded-xl p-3">
+              <div className="text-2xl font-bold text-orange-600">
+                {missions.filter(m => m.status === 'inProgress').length}
+              </div>
+              <div className="text-xs text-text-light">进行中</div>
+            </div>
+            <div className="bg-gray-100 rounded-xl p-3">
+              <div className="text-2xl font-bold text-gray-500">
+                {missions.filter(m => m.status === 'locked').length}
+              </div>
+              <div className="text-xs text-text-light">已锁定</div>
+            </div>
+          </div>
+        </section>
+        </>
+        )}
       </main>
 
       {/* WebView 搜索 */}
