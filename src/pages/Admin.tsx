@@ -224,7 +224,7 @@ export default function Admin() {
                     </span>
                     <button
                       onClick={() => {
-                        if (confirm(`确定要删除整个"${course.title}"课程吗？这将删除所有课时。`)) {
+                        if (confirm(`确定要删除"${course.title}"课程吗？`)) {
                           deleteCourse(course.id, course.lessons.map(l => l.id))
                         }
                       }}
@@ -235,7 +235,7 @@ export default function Admin() {
                   </div>
                 </div>
 
-                {/* 课时列表 */}
+                {/* 课程列表 */}
                 <div className="divide-y divide-gray-100">
                   {course.lessons.map((lesson, index) => {
                     const progress = lessonProgress[lesson.id]
@@ -249,7 +249,7 @@ export default function Admin() {
                           /* 编辑模式 */
                           <div className="space-y-4">
                             <div>
-                              <label className="block text-text font-medium mb-1">课时名称</label>
+                              <label className="block text-text font-medium mb-1">课程名称</label>
                               <input
                                 type="text"
                                 value={editForm.title || ''}
@@ -389,7 +389,7 @@ export default function Admin() {
                               </button>
                               <button
                                 onClick={() => {
-                                  if (confirm(`确定要删除"${display.title}"这个课时吗？`)) {
+                                  if (confirm(`确定要删除"${display.title}"这个课程吗？`)) {
                                     deleteLesson(lesson.id)
                                   }
                                 }}
