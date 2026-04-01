@@ -11,13 +11,14 @@ export default function Admin() {
   const [activeTab, setActiveTab] = useState<'daily' | 'courses'>('courses')
   const [editingLessonId, setEditingLessonId] = useState<string | null>(null)
   const [editForm, setEditForm] = useState<Partial<LessonConfig>>({})
+  const [refreshKey, setRefreshKey] = useState(0)  // 用于强制刷新
   const fileInputRef = useRef<HTMLInputElement>(null)
   
   const { todayMission, initializeDailyMission } = useDailyMissionStore()
   const { lessonConfigs, updateLessonConfig, deleteLesson, deleteCourse } = useCourseConfigStore()
   const lessonProgress = useProgressStore((s) => s.lessons)
 
-  // 过滤掉隐藏的课时（响应式）
+  // 过滤掉隐藏的课程（响应式）
   const visibleCourses = courses
     .map(course => ({
       ...course,
@@ -64,6 +65,9 @@ export default function Admin() {
     if (editingLessonId) {
       updateLessonConfig(editingLessonId, editForm)
       setEditingLessonId(null)
+      setEditForm({})
+      // 强制刷新以确保显示最新数据
+      setRefreshKey(k => k + 1)
     }
   }
 
@@ -208,7 +212,7 @@ export default function Admin() {
             <span className="text-sm text-text-light">点击编辑/删除按钮管理课程</span>
           </div>
 
-          <div className="space-y-4">
+          <div className="space-y-4" key={refreshKey}>
             {visibleCourses.map((course) => (
               <motion.div
                 key={course.id}
@@ -226,6 +230,7 @@ export default function Admin() {
                       onClick={() => {
                         if (confirm(`确定要删除"${course.title}"课程吗？`)) {
                           deleteCourse(course.id, course.lessons.map(l => l.id))
+                          setRefreshKey(k => k + 1)
                         }
                       }}
                       className="px-2 py-1 bg-red-500 hover:bg-red-600 rounded text-sm"
@@ -391,6 +396,7 @@ export default function Admin() {
                                 onClick={() => {
                                   if (confirm(`确定要删除"${display.title}"这个课程吗？`)) {
                                     deleteLesson(lesson.id)
+                                    setRefreshKey(k => k + 1)
                                   }
                                 }}
                                 className="px-3 py-1 bg-red-100 text-red-600 rounded-lg text-sm hover:bg-red-200"
