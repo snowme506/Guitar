@@ -100,13 +100,17 @@ export default function Practice() {
                   </div>
 
                   {/* 谱子图片 */}
-                  {sheetImage && (
+                  {sheetImage ? (
                     <div className="px-4 pb-3">
                       <img 
                         src={sheetImage} 
                         alt="谱子" 
-                        className="w-full h-24 object-contain bg-gray-50 rounded-xl"
+                        className="w-full h-36 object-contain bg-gray-50 rounded-xl"
                       />
+                    </div>
+                  ) : (
+                    <div className="px-4 pb-4 flex items-center justify-center">
+                      <div className="text-3xl opacity-30">🎼</div>
                     </div>
                   )}
                 </motion.div>
