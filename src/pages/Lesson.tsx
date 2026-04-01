@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { courses } from '../data/courses'
 import { useProgressStore } from '../stores/progressStore'
 import { useMissionStore } from '../stores/missionStore'
+import { useDailyMissionStore } from '../stores/dailyMissionStore'
 import TantanMascot from '../components/TantanMascot'
 import SheetView from '../components/SheetView'
 import RecordButton from '../components/RecordButton'
@@ -48,6 +49,9 @@ export default function Lesson() {
     // 完成对应的任务
     const missionId = `mission-${lessonId}`
     useMissionStore.getState().completeMission(missionId)
+    
+    // 记录今日任务的练习次数
+    useDailyMissionStore.getState().recordPractice(lessonId!)
     
     setShowConfetti(true)
     setShowScore(true)
