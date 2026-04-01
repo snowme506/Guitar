@@ -150,7 +150,7 @@ export default function Home() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.1 }}
                 whileTap={{ scale: 0.98 }}
-                onClick={() => navigate(`/lesson/${goal.lessonId}`)}
+                onClick={() => navigate('/practice')}
                 className={`
                   relative overflow-hidden rounded-3xl p-5
                   bg-gradient-to-br ${theme.bg}
