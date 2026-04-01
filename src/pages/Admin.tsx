@@ -2,15 +2,12 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { courses } from '../data/courses'
-import { useMissionStore } from '../stores/missionStore'
 import { useDailyMissionStore } from '../stores/dailyMissionStore'
 import { useProgressStore } from '../stores/progressStore'
 
-
 export default function Admin() {
   const navigate = useNavigate()
-  const [activeTab, setActiveTab] = useState<'daily' | 'missions'>('daily')
-  const { missions, resetMissions } = useMissionStore()
+  const [activeTab, setActiveTab] = useState<'daily' | 'courses'>('daily')
   const { todayMission, initializeDailyMission } = useDailyMissionStore()
   const lessonProgress = useProgressStore((s) => s.lessons)
 
@@ -26,18 +23,6 @@ export default function Admin() {
             ←
           </button>
           <h1 className="font-heading text-xl text-text">⚙️ 管理后台</h1>
-          <div className="ml-auto flex items-center gap-2">
-            <button
-              onClick={() => {
-                if (confirm('确定要重置所有任务吗？这将清空所有进度。')) {
-                  resetMissions()
-                }
-              }}
-              className="px-3 py-1 bg-red-100 text-red-600 rounded-lg text-sm"
-            >
-              🗑️ 重置
-            </button>
-          </div>
         </div>
       </header>
 
@@ -58,11 +43,11 @@ export default function Admin() {
             🎯 今日任务
           </button>
           <button
-            onClick={() => setActiveTab('missions')}
+            onClick={() => setActiveTab('courses')}
             className={`
               flex-1 py-2 px-4 rounded-xl font-bold text-sm
               transition-all duration-200
-              ${activeTab === 'missions'
+              ${activeTab === 'courses'
                 ? 'bg-primary text-white'
                 : 'text-text hover:bg-surface2'
               }
@@ -112,7 +97,6 @@ export default function Admin() {
             <div className="divide-y divide-gray-100">
               {todayMission?.goals.map((goal) => {
                 const isComplete = goal.currentCount >= goal.targetCount
-                const course = courses.find(c => c.lessons.some(l => l.id === goal.lessonId))
                 
                 return (
                   <div key={goal.lessonId} className="p-4">
@@ -137,36 +121,6 @@ export default function Admin() {
                           </span>
                         ))}
                       </div>
-                    </div>
-
-                    {/* 调整目标次数 */}
-                    <div className="mt-2 flex items-center gap-2">
-                      <span className="text-xs text-text-light">调整目标:</span>
-                      <button
-                        onClick={() => {
-                          // 减少目标次数（最少1次）
-                          if (goal.targetCount > 1) {
-                            // Note: 需要更新 store，这里简化处理
-                            console.log('减少目标')
-                          }
-                        }}
-                        className="w-6 h-6 bg-gray-100 rounded text-sm hover:bg-gray-200"
-                      >
-                        -
-                      </button>
-                      <span className="text-sm font-medium">{goal.targetCount}</span>
-                      <button
-                        onClick={() => {
-                          // 增加目标次数
-                          console.log('增加目标')
-                        }}
-                        className="w-6 h-6 bg-gray-100 rounded text-sm hover:bg-gray-200"
-                      >
-                        +
-                      </button>
-                      <span className="text-xs text-text-light ml-2">
-                        {course?.title || ''}
-                      </span>
                     </div>
                   </div>
                 )
@@ -209,34 +163,71 @@ export default function Admin() {
         <>
         {/* 课程体系管理 */}
         <section className="mb-6">
-          <h2 className="font-heading text-lg text-text mb-4">📚 课程列表</h2>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="font-heading text-lg text-text">📚 课程列表</h2>
+            <button
+              onClick={() => {
+                alert('添加课程功能开发中...')
+              }}
+              className="px-3 py-1 bg-primary text-white rounded-lg text-sm"
+            >
+              ➕ 添加课程
+            </button>
+          </div>
+
           <div className="space-y-4">
             {courses.map((course) => (
               <motion.div
                 key={course.id}
                 className="bg-surface rounded-2xl overflow-hidden shadow"
               >
+                {/* 课程头部 */}
                 <div className="px-4 py-3 bg-gradient-to-r from-orange-400 to-orange-500 text-white">
                   <div className="flex items-center gap-2">
                     <span className="text-2xl">{course.emoji}</span>
-                    <span className="font-bold">{course.title}</span>
-                    <span className="ml-auto text-white/80 text-sm">
-                      {course.lessons.length} 课时
-                    </span>
+                    <div className="flex-1">
+                      <span className="font-bold">{course.title}</span>
+                      <span className="ml-2 text-white/80 text-sm">
+                        {course.lessons.length} 课时
+                      </span>
+                    </div>
+                    <button
+                      onClick={() => alert('编辑课程功能开发中...')}
+                      className="px-2 py-1 bg-white/20 rounded text-sm hover:bg-white/30"
+                    >
+                      ✏️ 编辑
+                    </button>
                   </div>
                 </div>
+
+                {/* 课时列表 */}
                 <div className="divide-y divide-gray-100">
-                  {course.lessons.map((lesson) => {
+                  {course.lessons.map((lesson, lessonIndex) => {
                     const progress = lessonProgress[lesson.id]
                     return (
-                      <div key={lesson.id} className="p-4 flex items-center gap-3">
-                        <span className="text-xl">🎸</span>
+                      <div key={lesson.id} className="px-4 py-3 flex items-center gap-3">
+                        <span className="text-lg font-medium text-text-light">
+                          {lessonIndex + 1}
+                        </span>
                         <div className="flex-1">
                           <span className="font-medium text-text">{lesson.title}</span>
                           {progress && (
-                            <div className="text-xs text-text-light mt-1">
+                            <div className="text-xs text-text-light mt-0.5">
                               练习 {progress.attempts} 次 | 最高 {progress.bestScore} 分
+                              {progress.completed && <span className="text-green-500 ml-2">✅</span>}
                             </div>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {lesson.content?.chordDiagram && (
+                            <span className="text-xs bg-blue-50 text-blue-600 px-2 py-0.5 rounded">
+                              🎸 {lesson.content.chordDiagram}
+                            </span>
+                          )}
+                          {lesson.standardNotes && lesson.standardNotes.length > 0 && (
+                            <span className="text-xs bg-green-50 text-green-600 px-2 py-0.5 rounded">
+                              🎵 {lesson.standardNotes.length} 音符
+                            </span>
                           )}
                         </div>
                         <button
@@ -259,12 +250,14 @@ export default function Admin() {
           <h3 className="font-heading text-lg text-text mb-4">📊 学习统计</h3>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
             <div className="bg-gray-100 rounded-xl p-3">
-              <div className="text-2xl font-bold text-primary">{missions.length}</div>
-              <div className="text-xs text-text-light">总任务</div>
+              <div className="text-2xl font-bold text-primary">
+                {courses.reduce((sum, c) => sum + c.lessons.length, 0)}
+              </div>
+              <div className="text-xs text-text-light">总课时</div>
             </div>
             <div className="bg-green-100 rounded-xl p-3">
               <div className="text-2xl font-bold text-green-600">
-                {missions.filter(m => m.status === 'completed').length}
+                {Object.values(lessonProgress).filter(p => p?.completed).length}
               </div>
               <div className="text-xs text-text-light">已完成</div>
             </div>
@@ -285,7 +278,6 @@ export default function Admin() {
         </>
         )}
       </main>
-
     </div>
   )
 }
