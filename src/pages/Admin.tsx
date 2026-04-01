@@ -47,7 +47,7 @@ export default function Admin() {
     return {
       title: config?.title || defaultTitle,
       chordDiagram: config?.chordDiagram,
-      sheetImageUrl: config?.sheetImageUrl,
+      sheetImageData: config?.sheetImageData,
     }
   }
 
@@ -66,7 +66,7 @@ export default function Admin() {
     setEditForm({
       title: display.title,
       chordDiagram: display.chordDiagram || '',
-      sheetImageUrl: display.sheetImageUrl || '',
+      sheetImageData: display.sheetImageData || '',
       targetCount: target,
     })
     setEditingLessonId(lessonId)
@@ -133,7 +133,7 @@ export default function Admin() {
     ctx.drawImage(img, cropX, cropY, cropWidth, cropHeight, 0, 0, cropWidth, cropHeight)
 
     const croppedBase64 = canvas.toDataURL('image/jpeg', 0.9)
-    setEditForm(prev => ({ ...prev, sheetImageUrl: croppedBase64 }))
+    setEditForm(prev => ({ ...prev, sheetImageData: croppedBase64 }))
     setCropModalOpen(false)
     setImageToCrop(null)
   }, [])
@@ -510,9 +510,9 @@ export default function Admin() {
 
                             <div>
                               <label className="block text-text font-medium mb-1">谱子图片（可裁剪）</label>
-                              {editForm.sheetImageUrl && (
+                              {editForm.sheetImageData && (
                                 <img
-                                  src={editForm.sheetImageUrl}
+                                  src={editForm.sheetImageData}
                                   alt="谱子预览"
                                   className="w-full h-32 object-contain bg-gray-100 rounded-xl mb-2"
                                 />
@@ -531,9 +531,9 @@ export default function Admin() {
                                 >
                                   📷 上传并裁剪
                                 </button>
-                                {editForm.sheetImageUrl && (
+                                {editForm.sheetImageData && (
                                   <button
-                                    onClick={() => setEditForm(prev => ({ ...prev, sheetImageUrl: '' }))}
+                                    onClick={() => setEditForm(prev => ({ ...prev, sheetImageData: '' }))}
                                     className="px-4 py-2 bg-red-50 text-red-600 rounded-xl text-sm"
                                   >
                                     🗑️ 删除
@@ -579,7 +579,7 @@ export default function Admin() {
                                 <span className="text-xs bg-orange-50 text-orange-600 px-2 py-0.5 rounded">
                                   🎯 每日 {targetCount} 次
                                 </span>
-                                {display.sheetImageUrl && (
+                                {display.sheetImageData && (
                                   <span className="text-xs bg-purple-50 text-purple-600 px-2 py-0.5 rounded">
                                     🖼️ 有谱子
                                   </span>

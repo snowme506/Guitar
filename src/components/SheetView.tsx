@@ -3,13 +3,15 @@ import type { SheetSource } from '../data/types'
 
 interface SheetViewProps {
   sheet?: SheetSource
-  sheetImageUrl?: string
+  sheetImageData?: string
   onSheetChange?: (sheet: SheetSource) => void
   editable?: boolean
 }
 
-export default function SheetView({ sheet, sheetImageUrl, onSheetChange, editable = false }: SheetViewProps) {
-  const [imageUrl, setImageUrl] = useState<string | null>(sheet?.imageUrl ?? sheetImageUrl ?? null)
+export default function SheetView({ sheet, sheetImageData, onSheetChange, editable = false }: SheetViewProps) {
+  const [imageUrl, setImageUrl] = useState<string | null>(
+    sheet?.imageUrl ?? sheetImageData ?? null
+  )
   const [isDragging, setIsDragging] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 

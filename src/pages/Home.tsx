@@ -33,7 +33,7 @@ export default function Home() {
   // 获取课程谱子图片
   const getSheetImage = (lessonId: string) => {
     const config = courseConfigs[lessonId]
-    return config?.sheetImageUrl || null
+    return config?.sheetImageData || null
   }
 
   // Initialize daily mission on first load

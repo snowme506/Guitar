@@ -66,7 +66,7 @@ export default function Practice() {
               const progress = lessonProgress[goal.lessonId]
               const config = courseConfigs[goal.lessonId]
               const title = config?.title || goal.title
-              const sheetImage = config?.sheetImageUrl
+              const sheetImage = config?.sheetImageData
 
               return (
                 <motion.div

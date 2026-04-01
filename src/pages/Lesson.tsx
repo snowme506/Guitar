@@ -35,7 +35,7 @@ export default function Lesson() {
 
   // 从课程配置读取谱子图片和自定义标题
   const courseConfig = useCourseConfigStore((s) => s.getLessonConfig(lessonId!))
-  const sheetImageUrl = courseConfig?.sheetImageUrl
+  const sheetImageData = courseConfig?.sheetImageData
 
   // 优先用 courseConfig 里的标题（用户自定义名），再 fallback 到 mission/lesson 原名
   const lessonTitle = courseConfig?.title || mission?.title || lesson?.title || '未知课时'
@@ -134,9 +134,9 @@ export default function Lesson() {
               {/* 谱子 */}
               <div>
                 <h3 className="font-heading text-lg text-text mb-3">🎼 {lessonContent.chordDiagram || '跟弹谱子'}</h3>
-                <SheetView 
+                <SheetView
                   sheet={lessonContent.sheet as any}
-                  sheetImageUrl={sheetImageUrl}
+                  sheetImageData={sheetImageData}
                 />
               </div>
 
