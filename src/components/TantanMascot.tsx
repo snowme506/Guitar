@@ -7,15 +7,15 @@ interface TantanMascotProps {
 }
 
 const sizeMap = {
-  sm: 'text-4xl',
-  md: 'text-6xl',
-  lg: 'text-8xl',
+  sm: 'w-16 h-16',
+  md: 'w-24 h-24',
+  lg: 'w-32 h-32',
 }
 
 const emojiMap = {
   idle: '🎸',
   happy: '🎉',
-  cheer: '🎸',
+  cheer: '💪',
   surprised: '😮',
 }
 
@@ -28,10 +28,10 @@ export default function TantanMascot({
   const sizeClass = sizeMap[size]
 
   return (
-    <div className="relative flex flex-col items-center">
+    <div className="relative inline-flex flex-col items-center">
       {/* 弹弹吉祥物 */}
       <motion.div
-        className={`${sizeClass} relative flex items-center justify-center`}
+        className={`${sizeClass} relative flex items-center justify-center text-6xl`}
         animate={state === 'idle' ? { y: [0, -8, 0] } : 
                  state === 'happy' ? { rotate: [0, 360], scale: [1, 1.2, 1] } :
                  state === 'cheer' ? { y: [0, -15, 0], rotate: [-10, 10, -10] } :

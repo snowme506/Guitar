@@ -1,9 +1,7 @@
 import { useNavigate } from 'react-router-dom'
-import { motion } from 'framer-motion'
 import { courses } from '../data/courses'
 import { useProgressStore } from '../stores/progressStore'
 import { useMissionStore } from '../stores/missionStore'
-import TantanMascot from '../components/TantanMascot'
 import { MissionList } from '../components/MissionList'
 import type { Mission } from '../stores/missionStore'
 

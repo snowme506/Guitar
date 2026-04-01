@@ -1,15 +1,23 @@
-export type PracticeStatus = 'pending' | 'in_progress' | 'completed'
-
-export interface Practice {
+export interface Course {
   id: string
   title: string
   emoji: string
   coverColor: string
-  date: string  // 上课日期
-  sheet?: SheetSource
-  status: PracticeStatus
-  score?: number
-  attempts: number
+  coverImage?: string
+  lessons: Lesson[]
+}
+
+export interface Lesson {
+  id: string
+  title: string
+  duration: number
+  starsToUnlock: number
+  content: {
+    sheet?: SheetSource
+    chordDiagram?: string
+    musicXml?: string
+  }
+  standardNotes?: Note[]
 }
 
 export interface SheetSource {
@@ -19,9 +27,9 @@ export interface SheetSource {
 }
 
 export interface Note {
-  time: number
-  string: number
-  fret: number
+  time: number      // seconds
+  string: number    // 1-6 (high E to low E)
+  fret: number      // 0 = open
   duration?: number
 }
 
@@ -29,9 +37,9 @@ export interface Progress {
   totalStars: number
   earnedBadges: string[]
   outfits: string[]
-  practices: {
-    [practiceId: string]: {
-      status: PracticeStatus
+  lessons: {
+    [lessonId: string]: {
+      completed: boolean
       bestScore: number
       starsEarned: number
       attempts: number
@@ -50,7 +58,7 @@ export interface Reward {
 
 export interface Review {
   id: string
-  practiceId: string
+  lessonId: string
   studentId: string
   audioBlob?: Blob
   audioUrl?: string

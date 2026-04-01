@@ -1,7 +1,7 @@
 import { motion } from 'framer-motion'
 import type { Mission } from '../stores/missionStore'
 import { useProgressStore } from '../stores/progressStore'
-import { StarDisplay } from './StarDisplay'
+import StarDisplay from './StarDisplay'
 
 interface MissionCardProps {
   mission: Mission
@@ -11,7 +11,7 @@ interface MissionCardProps {
 }
 
 export function MissionCard({ mission, onStart, onContinue, index = 0 }: MissionCardProps) {
-  const { totalStars } = useProgressStore()
+  useProgressStore() // Just to subscribe to store
 
   const isLocked = mission.status === 'locked'
   const isCompleted = mission.status === 'completed'
