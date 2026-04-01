@@ -22,6 +22,13 @@ export default function Home() {
   const totalStars = useProgressStore((s) => s.totalStars)
   const lessonProgress = useProgressStore((s) => s.lessons)
   const { todayMission, initializeDailyMission } = useDailyMissionStore()
+  const courseConfigs = useCourseConfigStore((s) => s.lessonConfigs)
+
+  // 获取课程的最新名称（从配置中读取）
+  const getLessonTitle = (lessonId: string, defaultTitle: string) => {
+    const config = courseConfigs[lessonId]
+    return config?.title || defaultTitle
+  }
 
   // Initialize daily mission on first load
   useEffect(() => {
@@ -127,6 +134,7 @@ export default function Home() {
           {todayMission?.goals.map((goal, index) => {
             const isComplete = goal.currentCount >= goal.targetCount
             const theme = CARD_THEMES[index % CARD_THEMES.length]
+            const displayTitle = getLessonTitle(goal.lessonId, goal.title)
             
             return (
               <motion.div
@@ -154,7 +162,7 @@ export default function Home() {
                 <div className="mb-4">
                   <span className="text-4xl mb-2 block">{goal.emoji}</span>
                   <h3 className={`font-bold text-xl text-white ${isComplete ? 'opacity-80' : ''}`}>
-                    {goal.title}
+                    {displayTitle}
                   </h3>
                 </div>
 
