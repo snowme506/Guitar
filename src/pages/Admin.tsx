@@ -6,6 +6,15 @@ import { useDailyMissionStore } from '../stores/dailyMissionStore'
 import { useCourseConfigStore, type LessonConfig } from '../stores/courseConfigStore'
 import { useProgressStore } from '../stores/progressStore'
 
+// 过滤掉隐藏的课时
+const visibleCourses = courses.map(course => ({
+  ...course,
+  lessons: course.lessons.filter(lesson => {
+    const config = useCourseConfigStore.getState().lessonConfigs[lesson.id]
+    return !config?.hidden
+  })
+})).filter(course => course.lessons.length > 0)
+
 export default function Admin() {
   const navigate = useNavigate()
   const [activeTab, setActiveTab] = useState<'daily' | 'courses'>('courses')
@@ -14,7 +23,7 @@ export default function Admin() {
   const fileInputRef = useRef<HTMLInputElement>(null)
   
   const { todayMission, initializeDailyMission } = useDailyMissionStore()
-  const { lessonConfigs, updateLessonConfig } = useCourseConfigStore()
+  const { lessonConfigs, updateLessonConfig, deleteLesson, deleteCourse } = useCourseConfigStore()
   const lessonProgress = useProgressStore((s) => s.lessons)
 
   // 获取课程配置（合并静态数据 + 用户编辑）
@@ -126,7 +135,7 @@ export default function Admin() {
             <button
               onClick={() => {
                 initializeDailyMission(
-                  courses.map(c => ({
+                  visibleCourses.map(c => ({
                     id: c.id,
                     lessons: c.lessons.map(l => ({ id: l.id, title: l.title })),
                   })),
@@ -194,11 +203,11 @@ export default function Admin() {
         <section className="mb-6">
           <div className="flex items-center justify-between mb-4">
             <h2 className="font-heading text-lg text-text">📚 课程内容编辑</h2>
-            <span className="text-sm text-text-light">点击编辑按钮修改课程内容</span>
+            <span className="text-sm text-text-light">点击编辑/删除按钮管理课程</span>
           </div>
 
           <div className="space-y-4">
-            {courses.map((course) => (
+            {visibleCourses.map((course) => (
               <motion.div
                 key={course.id}
                 className="bg-surface rounded-2xl overflow-hidden shadow"
@@ -211,6 +220,16 @@ export default function Admin() {
                     <span className="ml-auto text-white/80 text-sm">
                       {course.lessons.length} 课时
                     </span>
+                    <button
+                      onClick={() => {
+                        if (confirm(`确定要删除整个"${course.title}"课程吗？这将删除所有课时。`)) {
+                          deleteCourse(course.id, course.lessons.map(l => l.id))
+                        }
+                      }}
+                      className="px-2 py-1 bg-red-500 hover:bg-red-600 rounded text-sm"
+                    >
+                      🗑️
+                    </button>
                   </div>
                 </div>
 
@@ -372,6 +391,16 @@ export default function Admin() {
                               >
                                 练习
                               </button>
+                              <button
+                                onClick={() => {
+                                  if (confirm(`确定要删除"${display.title}"这个课时吗？`)) {
+                                    deleteLesson(lesson.id)
+                                  }
+                                }}
+                                className="px-3 py-1 bg-red-100 text-red-600 rounded-lg text-sm hover:bg-red-200"
+                              >
+                                🗑️
+                              </button>
                             </div>
                           </div>
                         )}
@@ -390,7 +419,7 @@ export default function Admin() {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
             <div className="bg-gray-100 rounded-xl p-3">
               <div className="text-2xl font-bold text-primary">
-                {courses.reduce((sum, c) => sum + c.lessons.length, 0)}
+                {visibleCourses.reduce((sum, c) => sum + c.lessons.length, 0)}
               </div>
               <div className="text-xs text-text-light">总课时</div>
             </div>

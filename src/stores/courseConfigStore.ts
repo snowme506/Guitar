@@ -8,6 +8,7 @@ export interface LessonConfig {
   chordDiagram?: string
   sheetImageUrl?: string
   targetCount?: number  // 每日任务目标次数
+  hidden?: boolean      // 是否隐藏（删除）
 }
 
 export interface CourseConfigStore {
@@ -17,7 +18,10 @@ export interface CourseConfigStore {
   // Actions
   updateLessonConfig: (lessonId: string, config: Partial<LessonConfig>) => void
   getLessonConfig: (lessonId: string) => LessonConfig | undefined
+  deleteLesson: (lessonId: string) => void
+  deleteCourse: (courseId: string, lessonIds: string[]) => void
   resetLessonConfig: (lessonId: string) => void
+  isLessonVisible: (lessonId: string) => boolean
 }
 
 export const useCourseConfigStore = create<CourseConfigStore>()(
@@ -42,12 +46,44 @@ export const useCourseConfigStore = create<CourseConfigStore>()(
         return get().lessonConfigs[lessonId]
       },
 
+      deleteLesson: (lessonId) => {
+        set(state => ({
+          lessonConfigs: {
+            ...state.lessonConfigs,
+            [lessonId]: {
+              ...state.lessonConfigs[lessonId],
+              lessonId,
+              hidden: true,
+            }
+          }
+        }))
+      },
+
+      deleteCourse: (_courseId, lessonIds: string[]) => {
+        set(state => {
+          const newConfigs = { ...state.lessonConfigs }
+          lessonIds.forEach(id => {
+            newConfigs[id] = {
+              ...newConfigs[id],
+              lessonId: id,
+              hidden: true,
+            }
+          })
+          return { lessonConfigs: newConfigs }
+        })
+      },
+
       resetLessonConfig: (lessonId) => {
         set(state => {
           const newConfigs = { ...state.lessonConfigs }
           delete newConfigs[lessonId]
           return { lessonConfigs: newConfigs }
         })
+      },
+
+      isLessonVisible: (lessonId) => {
+        const config = get().lessonConfigs[lessonId]
+        return !config?.hidden
       },
     }),
     {
