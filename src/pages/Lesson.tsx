@@ -33,13 +33,15 @@ export default function Lesson() {
     .find(l => l.id === lessonId)
   const course = courses.find(c => c.lessons.some(l => l.id === lessonId))
 
-  // 使用 mission 里的内容（优先）或者 fallback 到 course 里的
-  const lessonContent = mission?.content || lesson?.content || {}
-  const lessonTitle = mission?.title || lesson?.title || '未知课时'
-
-  // 从课程配置读取谱子图片
+  // 从课程配置读取谱子图片和自定义标题
   const courseConfig = useCourseConfigStore((s) => s.getLessonConfig(lessonId!))
   const sheetImageUrl = courseConfig?.sheetImageUrl
+
+  // 优先用 courseConfig 里的标题（用户自定义名），再 fallback 到 mission/lesson 原名
+  const lessonTitle = courseConfig?.title || mission?.title || lesson?.title || '未知课时'
+
+  // 使用 mission 里的内容（优先）或者 fallback 到 course 里的
+  const lessonContent = mission?.content || lesson?.content || {}
 
   const handleRecordingComplete = (_blob: Blob, url: string) => {
     setRecordingUrl(url)
