@@ -20,12 +20,20 @@ export default function Lesson() {
   const [showSheetSearch, setShowSheetSearch] = useState(false)
   const [recordingUrl, setRecordingUrl] = useState<string | null>(null)
 
-  // 找到当前课时
+  // 从任务获取课时内容（任务直接包含所有内容）
+  const missionId = lessonId ? `mission-${lessonId}` : null
+  const missions = useMissionStore((s) => s.missions)
+  const mission = missions.find(m => m.id === missionId)
+  
+  // 兼容：从 courses 找（如果 mission 里没有）
   const lesson = courses
     .flatMap(c => c.lessons)
     .find(l => l.id === lessonId)
-
   const course = courses.find(c => c.lessons.some(l => l.id === lessonId))
+
+  // 使用 mission 里的内容（优先）或者 fallback 到 course 里的
+  const lessonContent = mission?.content || lesson?.content || {}
+  const lessonTitle = mission?.title || lesson?.title || '未知课时'
 
   const handleRecordingComplete = (_blob: Blob, url: string) => {
     setRecordingUrl(url)
@@ -90,9 +98,9 @@ export default function Lesson() {
             ←
           </button>
           <div>
-            <h1 className="font-heading text-lg text-text">{lesson.title}</h1>
-            {course && (
-              <p className="text-text-light text-sm">{course.title}</p>
+            <h1 className="font-heading text-lg text-text">{lessonTitle}</h1>
+            {mission?.emoji && (
+              <p className="text-text-light text-sm">{mission.emoji} 任务</p>
             )}
           </div>
         </div>
@@ -115,7 +123,7 @@ export default function Lesson() {
               {/* 谱子 */}
               <div>
                 <div className="flex items-center justify-between mb-3">
-                  <h3 className="font-heading text-lg text-text">🎼 跟弹谱子</h3>
+                  <h3 className="font-heading text-lg text-text">🎼 {lessonContent.chordDiagram || '跟弹谱子'}</h3>
                   <button
                     className="text-sm bg-secondary text-white px-3 py-1 rounded-full"
                     onClick={() => setShowSheetSearch(true)}
@@ -123,7 +131,9 @@ export default function Lesson() {
                     🔍 搜索
                   </button>
                 </div>
-                <SheetView sheet={lesson.content.sheet} />
+                <SheetView 
+                  sheet={lessonContent.sheet as any}
+                />
               </div>
 
               {/* 录音区 */}

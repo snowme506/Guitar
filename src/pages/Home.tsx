@@ -15,7 +15,9 @@ export default function Home() {
   if (missions.length === 0) {
     initializeMissions(courses.map(c => ({
       id: c.id,
-      lessons: c.lessons.map(l => ({ id: l.id, title: l.title })),
+      title: c.title,
+      emoji: c.emoji,
+      lessons: c.lessons,
     })))
   }
 

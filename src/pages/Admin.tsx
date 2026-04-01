@@ -2,35 +2,16 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { courses } from '../data/courses'
-import type { Course } from '../data/types'
-import SheetView from '../components/SheetView'
-import SheetSearchWebView from '../components/SheetSearchWebView'
-import { useMissionStore, type Mission } from '../stores/missionStore'
+import type { Mission } from '../stores/missionStore'
+import { useMissionStore } from '../stores/missionStore'
 import { useProgressStore } from '../stores/progressStore'
+import SheetSearchWebView from '../components/SheetSearchWebView'
 
 export default function Admin() {
   const navigate = useNavigate()
   const [showSheetSearch, setShowSheetSearch] = useState(false)
-  const [_editingCourse, setEditingCourse] = useState<Course | null>(null)
-  const [activeTab, setActiveTab] = useState<'courses' | 'missions'>('missions')
   const { missions, resetMissions, completeMission, startMission } = useMissionStore()
   const lessonProgress = useProgressStore((s) => s.lessons)
-
-  // Build unified mission list with course info
-  const unifiedMissions = missions.map(mission => {
-    const course = courses.find(c => c.id === mission.courseId)
-    const lesson = course?.lessons.find(l => l.id === mission.lessonId)
-    const progress = lessonProgress[mission.lessonId]
-    return {
-      ...mission,
-      courseName: course?.title || '',
-      courseEmoji: course?.emoji || '',
-      sheetNotes: lesson?.standardNotes || [],
-      chordDiagram: lesson?.content?.chordDiagram,
-      attempts: progress?.attempts || 0,
-      bestScore: progress?.bestScore || 0,
-    }
-  })
 
   const getStatusColor = (status: Mission['status']) => {
     switch (status) {
@@ -50,19 +31,6 @@ export default function Admin() {
     }
   }
 
-  // Group by course
-  const missionsByCourse = unifiedMissions.reduce((acc, mission) => {
-    if (!acc[mission.courseId]) {
-      acc[mission.courseId] = {
-        courseName: mission.courseName,
-        courseEmoji: mission.courseEmoji,
-        missions: []
-      }
-    }
-    acc[mission.courseId].missions.push(mission)
-    return acc
-  }, {} as Record<string, { courseName: string; courseEmoji: string; missions: typeof unifiedMissions }>)
-
   return (
     <div className="min-h-screen bg-background pb-20">
       {/* 顶部导航 */}
@@ -74,47 +42,23 @@ export default function Admin() {
           >
             ←
           </button>
-          <h1 className="font-heading text-xl text-text">⚙️ 管理后台</h1>
-        </div>
-      </header>
-
-      <main className="max-w-4xl mx-auto px-4 py-6">
-        {/* 切换标签 */}
-        <div className="flex gap-2 p-1 bg-surface rounded-2xl mb-6">
-          <button
-            onClick={() => setActiveTab('missions')}
-            className={`
-              flex-1 py-2 px-4 rounded-xl font-bold text-sm
-              transition-all duration-200
-              ${activeTab === 'missions'
-                ? 'bg-primary text-white'
-                : 'text-text hover:bg-surface2'
-              }
-            `}
-          >
-            🎯 任务中心
-          </button>
-          <button
-            onClick={() => setActiveTab('courses')}
-            className={`
-              flex-1 py-2 px-4 rounded-xl font-bold text-sm
-              transition-all duration-200
-              ${activeTab === 'courses'
-                ? 'bg-primary text-white'
-                : 'text-text hover:bg-surface2'
-              }
-            `}
-          >
-            📚 课程管理
-          </button>
-        </div>
-
-        {activeTab === 'missions' ? (
-        <>
-        {/* 统一任务中心 */}
-        <section className="mb-6">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="font-heading text-lg text-text">🎯 课程任务</h2>
+          <h1 className="font-heading text-xl text-text">🎯 任务管理</h1>
+          <div className="ml-auto flex items-center gap-2">
+            <button
+              onClick={() => {
+                if (confirm('确定要重新加载所有任务吗？这将清空进度。')) {
+                  useMissionStore.getState().initializeMissions(courses.map(c => ({
+                    id: c.id,
+                    title: c.title,
+                    emoji: c.emoji,
+                    lessons: c.lessons,
+                  })))
+                }
+              }}
+              className="px-3 py-1 bg-blue-100 text-blue-600 rounded-lg text-sm"
+            >
+              🔄 重新加载
+            </button>
             <button
               onClick={() => {
                 if (confirm('确定要重置所有任务吗？这将清空所有进度。')) {
@@ -123,135 +67,119 @@ export default function Admin() {
               }}
               className="px-3 py-1 bg-red-100 text-red-600 rounded-lg text-sm"
             >
-              🔄 重置任务
+              🗑️ 重置
             </button>
           </div>
+        </div>
+      </header>
 
-          {/* 按课程分组显示 */}
-          <div className="space-y-6">
-            {Object.entries(missionsByCourse).map(([courseId, courseGroup]) => (
-              <motion.div
-                key={courseId}
-                className="bg-surface rounded-2xl overflow-hidden shadow"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-              >
-                {/* 课程标题 */}
-                <div className="bg-gradient-to-r from-orange-400 to-orange-500 px-4 py-3 flex items-center gap-2">
-                  <span className="text-2xl">{courseGroup.courseEmoji}</span>
-                  <span className="font-bold text-white text-lg">{courseGroup.courseName}</span>
-                  <span className="ml-auto text-white/80 text-sm">
-                    {courseGroup.missions.filter(m => m.status === 'completed').length}/{courseGroup.missions.length} 完成
-                  </span>
-                </div>
+      <main className="max-w-4xl mx-auto px-4 py-6">
+        {/* 任务列表 */}
+        <section className="mb-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="font-heading text-lg text-text">📋 任务列表 ({missions.length})</h2>
+          </div>
 
-                {/* 任务列表 */}
-                <div className="divide-y divide-gray-100">
-                  {courseGroup.missions.map((mission) => (
-                    <div key={mission.id} className="p-4">
-                      <div className="flex items-start gap-3">
-                        {/* 状态图标 */}
-                        <div className={`
-                          w-12 h-12 rounded-xl flex items-center justify-center text-2xl
-                          ${mission.status === 'completed' ? 'bg-green-100' : 
-                            mission.status === 'locked' ? 'bg-gray-100' : 'bg-yellow-100'}
-                        `}>
-                          {mission.status === 'completed' ? '✅' : 
-                           mission.status === 'locked' ? '🔒' : mission.emoji}
-                        </div>
+          <div className="space-y-3">
+            {missions.map((mission, index) => {
+              const progress = lessonProgress[mission.lessonId]
+              return (
+                <motion.div
+                  key={mission.id}
+                  className="bg-surface rounded-2xl overflow-hidden shadow"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.05 }}
+                >
+                  {/* 任务头部 */}
+                  <div className={`
+                    px-4 py-3 flex items-center gap-3
+                    ${mission.status === 'completed' ? 'bg-green-50' :
+                      mission.status === 'locked' ? 'bg-gray-50' : 'bg-orange-50'}
+                  `}>
+                    <span className="text-2xl">{mission.emoji}</span>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        <h3 className={`font-bold text-lg ${mission.status === 'locked' ? 'text-gray-400' : 'text-text'}`}>
+                          {mission.title}
+                        </h3>
+                        <span className={`px-2 py-0.5 rounded-full text-xs ${getStatusColor(mission.status)}`}>
+                          {getStatusText(mission.status)}
+                        </span>
+                      </div>
+                      
+                      {/* 内容预览 */}
+                      <div className="flex items-center gap-3 text-sm text-text-light mt-1">
+                        {mission.content?.chordDiagram && (
+                          <span className="bg-blue-50 text-blue-600 px-2 py-0.5 rounded">
+                            🎸 {mission.content.chordDiagram}
+                          </span>
+                        )}
+                        {mission.content?.standardNotes && mission.content.standardNotes.length > 0 && (
+                          <span className="bg-green-50 text-green-600 px-2 py-0.5 rounded">
+                            🎵 {mission.content.standardNotes.length} 个音符
+                          </span>
+                        )}
+                        {mission.content?.sheet?.imageUrl && (
+                          <span className="bg-purple-50 text-purple-600 px-2 py-0.5 rounded">
+                            🖼️ 有图片谱子
+                          </span>
+                        )}
+                      </div>
 
-                        {/* 任务信息 */}
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 mb-1">
-                            <h3 className={`font-semibold text-text ${mission.status === 'locked' ? 'line-through text-gray-400' : ''}`}>
-                              {mission.title}
-                            </h3>
-                            <span className={`px-2 py-0.5 rounded-full text-xs ${getStatusColor(mission.status)}`}>
-                              {getStatusText(mission.status)}
-                            </span>
-                          </div>
-
-                          {/* 谱子信息 */}
-                          {mission.chordDiagram && (
-                            <div className="flex items-center gap-2 mb-2">
-                              <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded">
-                                🎼 {mission.chordDiagram}
-                              </span>
-                            </div>
-                          )}
-
-                          {/* 练习统计 */}
-                          <div className="flex items-center gap-4 text-sm text-text-light">
-                            <span>📝 练习 {mission.attempts} 次</span>
-                            {mission.bestScore > 0 && (
-                              <span>🏆 最高分 {mission.bestScore}</span>
-                            )}
-                            <span>⭐ 奖励 {mission.starReward}星</span>
-                          </div>
-
-                          {/* 音符预览 */}
-                          {mission.sheetNotes.length > 0 && (
-                            <div className="mt-2 flex items-center gap-1">
-                              {mission.sheetNotes.slice(0, 8).map((note, i) => (
-                                <div
-                                  key={i}
-                                  className="w-6 h-8 bg-gray-100 rounded flex items-center justify-center text-xs text-gray-500"
-                                >
-                                  {note.fret}
-                                </div>
-                              ))}
-                              {mission.sheetNotes.length > 8 && (
-                                <span className="text-xs text-gray-400">...</span>
-                              )}
-                            </div>
-                          )}
-                        </div>
-
-                        {/* 操作按钮 */}
-                        <div className="flex flex-col gap-2">
-                          {mission.status === 'locked' && (
-                            <button
-                              onClick={() => startMission(mission.id)}
-                              className="px-3 py-1 bg-yellow-100 text-yellow-700 rounded-lg text-sm font-medium"
-                            >
-                              解锁
-                            </button>
-                          )}
-                          {(mission.status === 'available' || mission.status === 'inProgress') && (
-                            <>
-                              <button
-                                onClick={() => completeMission(mission.id)}
-                                className="px-3 py-1 bg-green-100 text-green-700 rounded-lg text-sm font-medium"
-                              >
-                                完成
-                              </button>
-                              <button
-                                onClick={() => navigate(`/lesson/${mission.lessonId}`)}
-                                className="px-3 py-1 bg-orange-100 text-orange-700 rounded-lg text-sm font-medium"
-                              >
-                                练习
-                              </button>
-                            </>
-                          )}
-                          {mission.status === 'completed' && (
-                            <button
-                              onClick={() => navigate(`/lesson/${mission.lessonId}`)}
-                              className="px-3 py-1 bg-blue-100 text-blue-700 rounded-lg text-sm font-medium"
-                            >
-                              回顾
-                            </button>
-                          )}
-                        </div>
+                      {/* 统计 */}
+                      <div className="flex items-center gap-3 text-sm text-text-light mt-1">
+                        <span>⭐ 奖励 {mission.starReward}星</span>
+                        {progress && (
+                          <>
+                            <span>📝 练习 {progress.attempts}次</span>
+                            <span>🏆 最高 {progress.bestScore}分</span>
+                          </>
+                        )}
                       </div>
                     </div>
-                  ))}
-                </div>
-              </motion.div>
-            ))}
+                    <div className="flex flex-col gap-2">
+                      {mission.status === 'locked' && (
+                        <button
+                          onClick={() => startMission(mission.id)}
+                          className="px-3 py-1.5 bg-yellow-100 text-yellow-700 rounded-lg text-sm font-medium"
+                        >
+                          🔓 解锁
+                        </button>
+                      )}
+                      {(mission.status === 'available' || mission.status === 'inProgress') && (
+                        <>
+                          <button
+                            onClick={() => completeMission(mission.id)}
+                            className="px-3 py-1.5 bg-green-100 text-green-700 rounded-lg text-sm font-medium"
+                          >
+                            ✅ 完成
+                          </button>
+                          <button
+                            onClick={() => navigate(`/lesson/${mission.lessonId}`)}
+                            className="px-3 py-1.5 bg-orange-100 text-orange-700 rounded-lg text-sm font-medium"
+                          >
+                            🎸 练习
+                          </button>
+                        </>
+                      )}
+                      {mission.status === 'completed' && (
+                        <button
+                          onClick={() => navigate(`/lesson/${mission.lessonId}`)}
+                          className="px-3 py-1.5 bg-blue-100 text-blue-700 rounded-lg text-sm font-medium"
+                        >
+                          🔁 回顾
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </motion.div>
+              )
+            })}
           </div>
         </section>
 
-        {/* 总体统计 */}
+        {/* 统计 */}
         <section className="bg-surface rounded-2xl p-4 shadow">
           <h3 className="font-heading text-lg text-text mb-4">📊 学习统计</h3>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
@@ -273,89 +201,24 @@ export default function Admin() {
             </div>
             <div className="bg-yellow-100 rounded-xl p-3">
               <div className="text-2xl font-bold text-yellow-600">
-                {Math.max(...Object.values(lessonProgress).map(p => p?.bestScore || 0))}
+                {Math.max(0, ...Object.values(lessonProgress).map(p => p?.bestScore || 0))}
               </div>
               <div className="text-xs text-text-light">最高分</div>
             </div>
           </div>
         </section>
-        </>
-        ) : (
-        <>
-        {/* 课程列表 */}
-        <section className="mb-8">
-          <h2 className="font-heading text-lg text-text mb-4">📚 课程列表</h2>
-          <div className="space-y-4">
-            {courses.map(course => (
-              <motion.div
-                key={course.id}
-                className="bg-surface rounded-2xl p-4 shadow"
-                whileTap={{ scale: 0.98 }}
-              >
-                <div className="flex items-center gap-3">
-                  <span className="text-3xl">{course.emoji}</span>
-                  <div className="flex-1">
-                    <h3 className="font-semibold text-text">{course.title}</h3>
-                    <p className="text-text-light text-sm">
-                      {course.lessons.length} 课时
-                    </p>
-                  </div>
-                  <button
-                    className="px-4 py-2 bg-primary text-white rounded-xl text-sm"
-                    onClick={() => setEditingCourse(course)}
-                  >
-                    编辑
-                  </button>
-                </div>
-              </motion.div>
-            ))}
-          </div>
+
+        {/* 课程内容管理提示 */}
+        <section className="mt-6 bg-blue-50 rounded-2xl p-4">
+          <h3 className="font-heading text-lg text-blue-800 mb-2">💡 如何管理课程内容？</h3>
+          <p className="text-blue-600 text-sm">
+            课程内容（谱子、和弦图、音符）定义在 <code className="bg-blue-100 px-1 rounded">src/data/courses.ts</code> 文件中。
+            修改该文件后，点击"🔄 重新加载"即可更新任务内容。
+          </p>
         </section>
-
-        {/* 添加新课程 */}
-        <section>
-          <h2 className="font-heading text-lg text-text mb-4">➕ 添加新课程</h2>
-          <motion.div
-            className="bg-surface rounded-2xl p-6 shadow"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-          >
-            {/* 课程信息 */}
-            <div className="mb-6">
-              <label className="block text-text font-semibold mb-2">课程名称</label>
-              <input
-                type="text"
-                placeholder="例如：入门课程"
-                className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary"
-              />
-            </div>
-
-            {/* 谱子来源 */}
-            <div className="mb-6">
-              <label className="block text-text font-semibold mb-2">🎼 谱子</label>
-              <SheetView 
-                editable={true}
-                onSheetChange={(sheet) => console.log('Sheet changed:', sheet)}
-              />
-              <button
-                className="mt-2 w-full py-2 bg-secondary text-white rounded-xl"
-                onClick={() => setShowSheetSearch(true)}
-              >
-                🔍 从网络搜索谱子
-              </button>
-            </div>
-
-            {/* 提交按钮 */}
-            <button className="w-full py-3 bg-primary text-white rounded-xl font-bold text-lg">
-              保存课程
-            </button>
-          </motion.div>
-        </section>
-        </>
-        )}
       </main>
 
-      {/* WebView 搜索 */}
+      {/* 网络搜索 */}
       <SheetSearchWebView
         isOpen={showSheetSearch}
         onClose={() => setShowSheetSearch(false)}

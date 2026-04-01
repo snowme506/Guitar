@@ -108,7 +108,7 @@ export function MissionCard({ mission, onStart, onContinue, index = 0 }: Mission
 
           {/* Description */}
           <p className="text-white/80 text-sm line-clamp-2">
-            {mission.description}
+            {mission.content?.chordDiagram || '完成学习和练习'}
           </p>
         </div>
       </div>
