@@ -5,6 +5,7 @@ import { courses } from '../data/courses'
 import { useProgressStore } from '../stores/progressStore'
 import { useMissionStore } from '../stores/missionStore'
 import { useDailyMissionStore } from '../stores/dailyMissionStore'
+import { useCourseConfigStore } from '../stores/courseConfigStore'
 import TantanMascot from '../components/TantanMascot'
 import SheetView from '../components/SheetView'
 import RecordButton from '../components/RecordButton'
@@ -35,6 +36,10 @@ export default function Lesson() {
   // 使用 mission 里的内容（优先）或者 fallback 到 course 里的
   const lessonContent = mission?.content || lesson?.content || {}
   const lessonTitle = mission?.title || lesson?.title || '未知课时'
+
+  // 从课程配置读取谱子图片
+  const courseConfig = useCourseConfigStore((s) => s.getLessonConfig(lessonId!))
+  const sheetImageUrl = courseConfig?.sheetImageUrl
 
   const handleRecordingComplete = (_blob: Blob, url: string) => {
     setRecordingUrl(url)
@@ -129,6 +134,7 @@ export default function Lesson() {
                 <h3 className="font-heading text-lg text-text mb-3">🎼 {lessonContent.chordDiagram || '跟弹谱子'}</h3>
                 <SheetView 
                   sheet={lessonContent.sheet as any}
+                  sheetImageUrl={sheetImageUrl}
                 />
               </div>
 
