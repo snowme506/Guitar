@@ -388,12 +388,6 @@ export default function Admin() {
                                 ✏️ 编辑
                               </button>
                               <button
-                                onClick={() => navigate(`/lesson/${lesson.id}`)}
-                                className="px-3 py-1 bg-orange-100 text-orange-600 rounded-lg text-sm"
-                              >
-                                练习
-                              </button>
-                              <button
                                 onClick={() => {
                                   if (confirm(`确定要删除"${display.title}"这个课时吗？`)) {
                                     deleteLesson(lesson.id)
