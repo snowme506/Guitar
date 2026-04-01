@@ -9,6 +9,7 @@ import TantanMascot from '../components/TantanMascot'
 export default function Home() {
   const navigate = useNavigate()
   const totalStars = useProgressStore((s) => s.totalStars)
+  const lessonProgress = useProgressStore((s) => s.lessons)
   const { todayMission, initializeDailyMission } = useDailyMissionStore()
 
   // Initialize daily mission on first load
@@ -30,6 +31,19 @@ export default function Home() {
     g => g.currentCount >= g.targetCount
   ).length ?? 0
   const totalGoals = todayMission?.goals.length ?? 0
+
+  // Get all completed lessons
+  const completedLessons = Object.entries(lessonProgress)
+    .filter(([_, progress]) => progress?.completed)
+    .map(([lessonId, progress]) => {
+      const lesson = courses.flatMap(c => c.lessons).find(l => l.id === lessonId)
+      return {
+        lessonId,
+        title: lesson?.title || '未知课程',
+        bestScore: progress?.bestScore || 0,
+        attempts: progress?.attempts || 0,
+      }
+    })
 
   return (
     <div className="min-h-screen bg-background pb-20">
@@ -165,46 +179,42 @@ export default function Home() {
           )}
         </motion.div>
 
-        {/* 课程体系入口 */}
-        <section>
-          <h2 className="font-heading text-lg text-text mb-4">📚 课程体系</h2>
-          <div className="space-y-4">
-            {courses.map((course) => (
-              <motion.div
-                key={course.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="bg-surface rounded-2xl overflow-hidden shadow"
-              >
-                <div 
-                  className="px-4 py-3 flex items-center gap-3 cursor-pointer"
-                  onClick={() => navigate(`/lesson/${course.lessons[0]?.id}`)}
+        {/* 已完成任务 */}
+        {completedLessons.length > 0 && (
+          <section>
+            <h2 className="font-heading text-lg text-text mb-4">✅ 已完成任务</h2>
+            <div className="grid grid-cols-2 gap-3">
+              {completedLessons.slice(0, 6).map((lesson) => (
+                <motion.div
+                  key={lesson.lessonId}
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => navigate(`/lesson/${lesson.lessonId}`)}
+                  className="bg-green-50 rounded-2xl p-4 cursor-pointer hover:bg-green-100 transition-colors"
                 >
-                  <span className="text-3xl">{course.emoji}</span>
-                  <div className="flex-1">
-                    <h3 className="font-bold text-text">{course.title}</h3>
-                    <p className="text-text-light text-sm">{course.lessons.length} 课时</p>
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-xl">✅</span>
+                    <span className="font-medium text-text text-sm">{lesson.title}</span>
                   </div>
-                  <span className="text-xl">→</span>
-                </div>
-                <div className="px-4 pb-3 flex flex-wrap gap-2">
-                  {course.lessons.map((lesson) => (
-                    <button
-                      key={lesson.id}
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        navigate(`/lesson/${lesson.id}`)
-                      }}
-                      className="px-3 py-1 bg-surface2 rounded-full text-sm text-text hover:bg-gray-200 transition-colors"
-                    >
-                      {lesson.title}
-                    </button>
-                  ))}
-                </div>
-              </motion.div>
-            ))}
-          </div>
-        </section>
+                  <div className="flex items-center justify-between text-xs text-green-600">
+                    <span>🏆 {lesson.bestScore}分</span>
+                    <span>📝 {lesson.attempts}次</span>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* 空状态 - 没有已完成任务时 */}
+        {completedLessons.length === 0 && (
+          <section className="text-center py-8">
+            <div className="text-4xl mb-3 opacity-50">📝</div>
+            <p className="text-text-light">还没有完成任何课程</p>
+            <p className="text-text-light text-sm">完成今日任务开始你的学习吧！</p>
+          </section>
+        )}
       </main>
     </div>
   )
