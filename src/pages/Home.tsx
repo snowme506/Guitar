@@ -5,7 +5,7 @@ import { courses } from '../data/courses'
 import { useProgressStore } from '../stores/progressStore'
 import { useDailyMissionStore } from '../stores/dailyMissionStore'
 import { useCourseConfigStore } from '../stores/courseConfigStore'
-import TantanMascot from '../components/TantanMascot'
+import TandanLogo from '../components/TandanLogo'
 
 // 鲜艳的任务卡片颜色主题
 const CARD_THEMES = [
@@ -64,9 +64,12 @@ export default function Home() {
       {/* 顶部导航 */}
       <header className="bg-surface shadow-sm sticky top-0 z-40">
         <div className="max-w-2xl mx-auto px-4 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <span className="text-3xl">🎸</span>
-            <h1 className="font-heading text-2xl text-primary">Guitar乐园</h1>
+          <div className="flex items-center gap-3">
+            <TandanLogo size="sm" />
+            <div>
+              <h1 className="font-heading text-xl text-primary">Guitar乐园</h1>
+              <p className="text-xs text-text-light -mt-1">我是弹弹 🎸</p>
+            </div>
           </div>
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-1 bg-surface2 px-3 py-1 rounded-full">
@@ -96,12 +99,12 @@ export default function Home() {
           <motion.div
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
+            className="flex flex-col items-center"
           >
-            <TantanMascot 
-              state={todayMission?.completed ? "happy" : "idle"}
-              message={todayMission?.completed ? "太棒了！今天的任务全部完成！🎉" : getGreeting() + " 加油练习！"}
-              size="sm"
-            />
+            <TandanLogo size="md" />
+            <p className="mt-3 text-lg font-medium text-text">
+              {todayMission?.completed ? "太棒了！今天的任务全部完成！🎉" : getGreeting() + " 加油练习！"}
+            </p>
           </motion.div>
         </div>
 
