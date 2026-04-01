@@ -83,12 +83,16 @@ export default function Admin() {
     setEditForm({})
   }
 
-  // 处理图片上传
+  // 处理图片上传 - 使用 base64 存储以保持持久化
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (file) {
-      const url = URL.createObjectURL(file)
-      setEditForm(prev => ({ ...prev, sheetImageUrl: url }))
+      const reader = new FileReader()
+      reader.onload = (event) => {
+        const base64 = event.target?.result as string
+        setEditForm(prev => ({ ...prev, sheetImageUrl: base64 }))
+      }
+      reader.readAsDataURL(file)
     }
   }
 
