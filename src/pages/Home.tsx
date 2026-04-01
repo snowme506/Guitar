@@ -30,6 +30,12 @@ export default function Home() {
     return config?.title || defaultTitle
   }
 
+  // 获取课程谱子图片
+  const getSheetImage = (lessonId: string) => {
+    const config = courseConfigs[lessonId]
+    return config?.sheetImageUrl || null
+  }
+
   // Initialize daily mission on first load
   useEffect(() => {
     initializeDailyMission(
@@ -135,6 +141,7 @@ export default function Home() {
             const isComplete = goal.currentCount >= goal.targetCount
             const theme = CARD_THEMES[index % CARD_THEMES.length]
             const displayTitle = getLessonTitle(goal.lessonId, goal.title)
+            const sheetImage = getSheetImage(goal.lessonId)
             
             return (
               <motion.div
@@ -159,12 +166,23 @@ export default function Home() {
                 )}
 
                 {/* 任务标题 */}
-                <div className="mb-4">
+                <div className="mb-3">
                   <span className="text-4xl mb-2 block">{goal.emoji}</span>
                   <h3 className={`font-bold text-xl text-white ${isComplete ? 'opacity-80' : ''}`}>
                     {displayTitle}
                   </h3>
                 </div>
+
+                {/* 谱子图片预览 */}
+                {sheetImage && (
+                  <div className="mb-3 bg-white/20 rounded-xl p-2">
+                    <img 
+                      src={sheetImage} 
+                      alt="谱子" 
+                      className="w-full h-20 object-contain rounded-lg"
+                    />
+                  </div>
+                )}
 
                 {/* 练习进度 */}
                 <div className="space-y-2">
