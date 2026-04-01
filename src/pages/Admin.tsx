@@ -6,15 +6,6 @@ import { useDailyMissionStore } from '../stores/dailyMissionStore'
 import { useCourseConfigStore, type LessonConfig } from '../stores/courseConfigStore'
 import { useProgressStore } from '../stores/progressStore'
 
-// 过滤掉隐藏的课时
-const visibleCourses = courses.map(course => ({
-  ...course,
-  lessons: course.lessons.filter(lesson => {
-    const config = useCourseConfigStore.getState().lessonConfigs[lesson.id]
-    return !config?.hidden
-  })
-})).filter(course => course.lessons.length > 0)
-
 export default function Admin() {
   const navigate = useNavigate()
   const [activeTab, setActiveTab] = useState<'daily' | 'courses'>('courses')
@@ -25,6 +16,17 @@ export default function Admin() {
   const { todayMission, initializeDailyMission } = useDailyMissionStore()
   const { lessonConfigs, updateLessonConfig, deleteLesson, deleteCourse } = useCourseConfigStore()
   const lessonProgress = useProgressStore((s) => s.lessons)
+
+  // 过滤掉隐藏的课时（响应式）
+  const visibleCourses = courses
+    .map(course => ({
+      ...course,
+      lessons: course.lessons.filter(lesson => {
+        const config = lessonConfigs[lesson.id]
+        return !config?.hidden
+      })
+    }))
+    .filter(course => course.lessons.length > 0)
 
   // 获取课程配置（合并静态数据 + 用户编辑）
   const getLessonDisplay = (lessonId: string, defaultTitle: string) => {
