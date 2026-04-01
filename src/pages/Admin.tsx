@@ -1,6 +1,6 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 import { courses } from '../data/courses'
 import { useDailyMissionStore } from '../stores/dailyMissionStore'
 import { useCourseConfigStore } from '../stores/courseConfigStore'
@@ -12,16 +12,17 @@ export default function Admin() {
   const [activeTab, setActiveTab] = useState<'daily' | 'courses'>('courses')
   const [editingLessonId, setEditingLessonId] = useState<string | null>(null)
   const [editForm, setEditForm] = useState<Partial<LessonConfig>>({})
-  const [refreshKey, setRefreshKey] = useState(0)  // 用于强制刷新
+  const [refreshKey, setRefreshKey] = useState(0)
+  const [cropModalOpen, setCropModalOpen] = useState(false)
+  const [imageToCrop, setImageToCrop] = useState<string | null>(null)
+
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const cropAreaRef = useRef<HTMLDivElement>(null)
+  const imageRef = useRef<HTMLImageElement>(null)
+  const [imageLoaded, setImageLoaded] = useState(false)
   
   const { todayMission, initializeDailyMission } = useDailyMissionStore()
   const { lessonConfigs, updateLessonConfig, deleteLesson, deleteCourse, refreshConfigs } = useCourseConfigStore()
-
-  // 页面加载时从 localStorage 刷新配置
-  useEffect(() => {
-    refreshConfigs()
-  }, [])
   const lessonProgress = useProgressStore((s) => s.lessons)
 
   // 过滤掉隐藏的课程（响应式）
@@ -34,6 +35,11 @@ export default function Admin() {
       })
     }))
     .filter(course => course.lessons.length > 0)
+
+  // 页面加载时从 localStorage 刷新配置
+  useEffect(() => {
+    refreshConfigs()
+  }, [])
 
   // 获取课程配置（合并静态数据 + 用户编辑）
   const getLessonDisplay = (lessonId: string, defaultTitle: string) => {
@@ -64,6 +70,7 @@ export default function Admin() {
       targetCount: target,
     })
     setEditingLessonId(lessonId)
+    setImageLoaded(false)
   }
 
   // 保存编辑
@@ -72,7 +79,6 @@ export default function Admin() {
       updateLessonConfig(editingLessonId, editForm)
       setEditingLessonId(null)
       setEditForm({})
-      // 强制刷新以确保显示最新数据
       setRefreshKey(k => k + 1)
     }
   }
@@ -83,21 +89,217 @@ export default function Admin() {
     setEditForm({})
   }
 
-  // 处理图片上传 - 使用 base64 存储以保持持久化
+  // 处理图片上传 - 打开裁剪模态框
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (file) {
       const reader = new FileReader()
       reader.onload = (event) => {
         const base64 = event.target?.result as string
-        setEditForm(prev => ({ ...prev, sheetImageUrl: base64 }))
+        setImageToCrop(base64)
+        setCropModalOpen(true)
+        setImageLoaded(false)
       }
       reader.readAsDataURL(file)
     }
   }
 
+  // 裁剪图片
+  const cropImage = useCallback(() => {
+    if (!imageRef.current || !cropAreaRef.current) return
+
+    const canvas = document.createElement('canvas')
+    const ctx = canvas.getContext('2d')
+    if (!ctx) return
+
+    const img = imageRef.current
+    if (!img) return
+
+    // 计算实际显示图片的尺寸
+    const displayedWidth = img.offsetWidth
+    const displayedHeight = img.offsetHeight
+    
+    // 计算裁剪区域在原图上的坐标
+    const cropEl = cropAreaRef.current
+    if (!cropEl) return
+    
+    const cropX = (cropEl.offsetLeft / displayedWidth) * img.naturalWidth
+    const cropY = (cropEl.offsetTop / displayedHeight) * img.naturalHeight
+    const cropWidth = (cropEl.offsetWidth / displayedWidth) * img.naturalWidth
+    const cropHeight = (cropEl.offsetHeight / displayedHeight) * img.naturalHeight
+
+    canvas.width = cropWidth
+    canvas.height = cropHeight
+    ctx.drawImage(img, cropX, cropY, cropWidth, cropHeight, 0, 0, cropWidth, cropHeight)
+
+    const croppedBase64 = canvas.toDataURL('image/jpeg', 0.9)
+    setEditForm(prev => ({ ...prev, sheetImageUrl: croppedBase64 }))
+    setCropModalOpen(false)
+    setImageToCrop(null)
+  }, [])
+
+  // 拖拽裁剪区域
+  const [isDragging, setIsDragging] = useState(false)
+  const [dragStart, setDragStart] = useState({ x: 0, y: 0 })
+  const [cropPos, setCropPos] = useState({ x: 0, y: 0 })
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+    setIsDragging(true)
+    setDragStart({ x: e.clientX - cropPos.x, y: e.clientY - cropPos.y })
+  }
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!isDragging || !imageRef.current) return
+    
+    const img = imageRef.current
+    const newX = Math.max(0, Math.min(e.clientX - dragStart.x, img.offsetWidth - 100))
+    const newY = Math.max(0, Math.min(e.clientY - dragStart.y, img.offsetHeight - 100))
+    setCropPos({ x: newX, y: newY })
+  }
+
+  const handleMouseUp = () => {
+    setIsDragging(false)
+  }
+
+  // 调整裁剪区域大小
+  const [isResizing, setIsResizing] = useState(false)
+  const [resizeStart, setResizeStart] = useState({ x: 0, y: 0, w: 0, h: 0 })
+
+  const handleResizeMouseDown = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    setIsResizing(true)
+    setResizeStart({ 
+      x: e.clientX, 
+      y: e.clientY, 
+      w: cropAreaRef.current?.offsetWidth || 100, 
+      h: cropAreaRef.current?.offsetHeight || 100 
+    })
+  }
+
+  const handleResizeMouseMove = (e: React.MouseEvent) => {
+    if (!isResizing || !imageRef.current) return
+    
+    const img = imageRef.current
+    const deltaX = e.clientX - resizeStart.x
+    const deltaY = e.clientY - resizeStart.y
+    const newW = Math.max(50, Math.min(resizeStart.w + deltaX, img.offsetWidth))
+    const newH = Math.max(50, Math.min(resizeStart.h + deltaY, img.offsetHeight))
+    
+    if (cropAreaRef.current) {
+      cropAreaRef.current.style.width = `${newW}px`
+      cropAreaRef.current.style.height = `${newH}px`
+    }
+  }
+
+  const handleResizeMouseUp = () => {
+    setIsResizing(false)
+  }
+
   return (
     <div className="min-h-screen bg-background pb-20">
+      {/* 裁剪模态框 */}
+      <AnimatePresence>
+        {cropModalOpen && imageToCrop && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/80 z-50 flex flex-col items-center justify-center p-4"
+          >
+            <motion.div
+              initial={{ scale: 0.9 }}
+              animate={{ scale: 1 }}
+              className="bg-white rounded-2xl p-4 max-w-lg w-full"
+            >
+              <h3 className="text-lg font-bold text-text mb-4">📷 裁剪谱子图片</h3>
+              
+              {/* 图片容器 */}
+              <div 
+                className="relative bg-gray-100 rounded-xl overflow-hidden mb-4"
+                style={{ height: '300px' }}
+                onMouseMove={(e) => {
+                  handleMouseMove(e)
+                  handleResizeMouseMove(e)
+                }}
+                onMouseUp={() => {
+                  handleMouseUp()
+                  handleResizeMouseUp()
+                }}
+                onMouseLeave={() => {
+                  handleMouseUp()
+                  handleResizeMouseUp()
+                }}
+              >
+                <img
+                  ref={imageRef}
+                  src={imageToCrop}
+                  alt="待裁剪"
+                  className="w-full h-full object-contain"
+                  onLoad={() => setImageLoaded(true)}
+                  draggable={false}
+                />
+                
+                {/* 裁剪遮罩 */}
+                <div 
+                  className="absolute inset-0 border-2 border-dashed border-blue-500 bg-transparent"
+                  style={{ 
+                    background: 'repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(0,0,0,0.1) 10px, rgba(0,0,0,0.1) 20px)' 
+                  }}
+                />
+                
+                {/* 裁剪框 */}
+                {imageLoaded && (
+                  <div
+                    ref={cropAreaRef}
+                    className="absolute border-2 border-blue-500 bg-white/20 cursor-move"
+                    style={{
+                      left: cropPos.x,
+                      top: cropPos.y,
+                      width: '150px',
+                      height: '150px',
+                    }}
+                    onMouseDown={handleMouseDown}
+                  >
+                    {/* 调整大小手柄 */}
+                    <div 
+                      className="absolute bottom-0 right-0 w-6 h-6 bg-blue-500 cursor-se-resize rounded-tl-lg"
+                      onMouseDown={handleResizeMouseDown}
+                    >
+                      <div className="text-white text-xs text-center pt-1">↔</div>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* 操作提示 */}
+              <p className="text-sm text-text-light mb-4">
+                💡 拖拽裁剪框调整位置，拖拽右下角调整大小
+              </p>
+
+              {/* 按钮 */}
+              <div className="flex gap-2">
+                <button
+                  onClick={() => {
+                    setCropModalOpen(false)
+                    setImageToCrop(null)
+                  }}
+                  className="flex-1 px-4 py-2 bg-gray-100 text-text rounded-xl"
+                >
+                  取消
+                </button>
+                <button
+                  onClick={cropImage}
+                  disabled={!imageLoaded}
+                  className="flex-1 px-4 py-2 bg-primary text-white rounded-xl font-bold disabled:opacity-50"
+                >
+                  确认裁剪
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* 顶部导航 */}
       <header className="bg-surface shadow-sm sticky top-0 z-30">
         <div className="max-w-4xl mx-auto px-4 py-3 flex items-center gap-4">
@@ -147,7 +349,7 @@ export default function Admin() {
         {/* 今日任务管理 */}
         <section className="mb-6">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="font-heading text-lg text-text">🎯 今日任务</h2>
+            <h2 className="font-heading text-lg text-text">🎯 今日任务设置</h2>
             <button
               onClick={() => {
                 initializeDailyMission(
@@ -199,12 +401,6 @@ export default function Admin() {
                           目标: {goal.targetCount} 次 | 当前: {goal.currentCount} 次
                         </div>
                       </div>
-                      <button
-                        onClick={() => navigate(`/lesson/${goal.lessonId}`)}
-                        className="px-3 py-1 bg-orange-100 text-orange-600 rounded-lg text-sm"
-                      >
-                        练习
-                      </button>
                     </div>
                   </div>
                 )
@@ -219,7 +415,7 @@ export default function Admin() {
         <section className="mb-6">
           <div className="flex items-center justify-between mb-4">
             <h2 className="font-heading text-lg text-text">📚 课程内容编辑</h2>
-            <span className="text-sm text-text-light">点击编辑/删除按钮管理课程</span>
+            <span className="text-sm text-text-light">点击编辑按钮修改课程内容</span>
           </div>
 
           <div className="space-y-4" key={refreshKey}>
@@ -313,7 +509,7 @@ export default function Admin() {
                             </div>
 
                             <div>
-                              <label className="block text-text font-medium mb-1">谱子图片</label>
+                              <label className="block text-text font-medium mb-1">谱子图片（可裁剪）</label>
                               {editForm.sheetImageUrl && (
                                 <img
                                   src={editForm.sheetImageUrl}
@@ -333,7 +529,7 @@ export default function Admin() {
                                   onClick={() => fileInputRef.current?.click()}
                                   className="flex-1 px-4 py-2 bg-blue-50 text-blue-600 rounded-xl text-sm"
                                 >
-                                  📷 上传图片
+                                  📷 上传并裁剪
                                 </button>
                                 {editForm.sheetImageUrl && (
                                   <button
