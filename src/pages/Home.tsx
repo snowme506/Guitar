@@ -4,6 +4,7 @@ import { motion } from 'framer-motion'
 import { courses } from '../data/courses'
 import { useProgressStore } from '../stores/progressStore'
 import { useDailyMissionStore } from '../stores/dailyMissionStore'
+import { useCourseConfigStore } from '../stores/courseConfigStore'
 import TantanMascot from '../components/TantanMascot'
 
 // 鲜艳的任务卡片颜色主题
@@ -24,10 +25,13 @@ export default function Home() {
 
   // Initialize daily mission on first load
   useEffect(() => {
-    initializeDailyMission(courses.map(c => ({
-      id: c.id,
-      lessons: c.lessons.map(l => ({ id: l.id, title: l.title })),
-    })))
+    initializeDailyMission(
+      courses.map(c => ({
+        id: c.id,
+        lessons: c.lessons.map(l => ({ id: l.id, title: l.title })),
+      })),
+      useCourseConfigStore.getState().lessonConfigs
+    )
   }, [])
 
   const getGreeting = () => {

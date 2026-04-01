@@ -1,15 +1,75 @@
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { courses } from '../data/courses'
 import { useDailyMissionStore } from '../stores/dailyMissionStore'
+import { useCourseConfigStore, type LessonConfig } from '../stores/courseConfigStore'
 import { useProgressStore } from '../stores/progressStore'
 
 export default function Admin() {
   const navigate = useNavigate()
-  const [activeTab, setActiveTab] = useState<'daily' | 'courses'>('daily')
+  const [activeTab, setActiveTab] = useState<'daily' | 'courses'>('courses')
+  const [editingLessonId, setEditingLessonId] = useState<string | null>(null)
+  const [editForm, setEditForm] = useState<Partial<LessonConfig>>({})
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  
   const { todayMission, initializeDailyMission } = useDailyMissionStore()
+  const { lessonConfigs, updateLessonConfig } = useCourseConfigStore()
   const lessonProgress = useProgressStore((s) => s.lessons)
+
+  // 获取课程配置（合并静态数据 + 用户编辑）
+  const getLessonDisplay = (lessonId: string, defaultTitle: string) => {
+    const config = lessonConfigs[lessonId]
+    return {
+      title: config?.title || defaultTitle,
+      chordDiagram: config?.chordDiagram,
+      sheetImageUrl: config?.sheetImageUrl,
+    }
+  }
+
+  // 获取每日任务目标次数
+  const getTargetCount = (lessonId: string) => {
+    const config = lessonConfigs[lessonId]
+    const dailyGoal = todayMission?.goals.find(g => g.lessonId === lessonId)
+    return config?.targetCount || dailyGoal?.targetCount || 2
+  }
+
+  // 开始编辑
+  const startEdit = (lessonId: string) => {
+    const lesson = courses.flatMap(c => c.lessons).find(l => l.id === lessonId)
+    const display = getLessonDisplay(lessonId, lesson?.title || '')
+    const target = getTargetCount(lessonId)
+    setEditForm({
+      title: display.title,
+      chordDiagram: display.chordDiagram || '',
+      sheetImageUrl: display.sheetImageUrl || '',
+      targetCount: target,
+    })
+    setEditingLessonId(lessonId)
+  }
+
+  // 保存编辑
+  const saveEdit = () => {
+    if (editingLessonId) {
+      updateLessonConfig(editingLessonId, editForm)
+      setEditingLessonId(null)
+    }
+  }
+
+  // 取消编辑
+  const cancelEdit = () => {
+    setEditingLessonId(null)
+    setEditForm({})
+  }
+
+  // 处理图片上传
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      const url = URL.createObjectURL(file)
+      setEditForm(prev => ({ ...prev, sheetImageUrl: url }))
+    }
+  }
 
   return (
     <div className="min-h-screen bg-background pb-20">
@@ -53,7 +113,7 @@ export default function Admin() {
               }
             `}
           >
-            📚 课程体系
+            📚 课程编辑
           </button>
         </div>
 
@@ -62,13 +122,16 @@ export default function Admin() {
         {/* 今日任务管理 */}
         <section className="mb-6">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="font-heading text-lg text-text">🎯 今日任务设置</h2>
+            <h2 className="font-heading text-lg text-text">🎯 今日任务</h2>
             <button
               onClick={() => {
-                initializeDailyMission(courses.map(c => ({
-                  id: c.id,
-                  lessons: c.lessons.map(l => ({ id: l.id, title: l.title })),
-                })))
+                initializeDailyMission(
+                  courses.map(c => ({
+                    id: c.id,
+                    lessons: c.lessons.map(l => ({ id: l.id, title: l.title })),
+                  })),
+                  lessonConfigs
+                )
               }}
               className="px-3 py-1 bg-blue-100 text-blue-600 rounded-lg text-sm"
             >
@@ -82,7 +145,7 @@ export default function Admin() {
                 <div>
                   <h3 className="font-bold text-text">📅 {todayMission?.date || '未设置'}</h3>
                   <p className="text-text-light text-sm">
-                    计划 {todayMission?.goals.length || 0} 个课程，奖励 {todayMission?.starReward || 0} 星
+                    {todayMission?.goals.length || 0} 个课程 | 奖励 {todayMission?.starReward || 0} 星
                   </p>
                 </div>
                 {todayMission?.completed && (
@@ -93,86 +156,45 @@ export default function Admin() {
               </div>
             </div>
 
-            {/* 课程目标列表 */}
             <div className="divide-y divide-gray-100">
               {todayMission?.goals.map((goal) => {
-                const isComplete = goal.currentCount >= goal.targetCount
-                
+                const display = getLessonDisplay(goal.lessonId, goal.title)
                 return (
                   <div key={goal.lessonId} className="p-4">
                     <div className="flex items-center gap-3">
-                      <span className="text-2xl">{goal.emoji}</span>
+                      <span className="text-2xl">🎸</span>
                       <div className="flex-1">
                         <div className="flex items-center gap-2">
-                          <span className="font-medium text-text">{goal.title}</span>
-                          {isComplete && <span className="text-green-500">✅</span>}
+                          <span className="font-medium text-text">{display.title}</span>
+                          {goal.currentCount >= goal.targetCount && (
+                            <span className="text-green-500">✅</span>
+                          )}
                         </div>
                         <div className="text-sm text-text-light">
                           目标: {goal.targetCount} 次 | 当前: {goal.currentCount} 次
                         </div>
                       </div>
-                      <div className="flex items-center gap-1">
-                        {Array.from({ length: goal.targetCount }).map((_, i) => (
-                          <span
-                            key={i}
-                            className={`text-lg ${i < goal.currentCount ? 'opacity-100' : 'opacity-30'}`}
-                          >
-                            ⭐
-                          </span>
-                        ))}
-                      </div>
+                      <button
+                        onClick={() => navigate(`/lesson/${goal.lessonId}`)}
+                        className="px-3 py-1 bg-orange-100 text-orange-600 rounded-lg text-sm"
+                      >
+                        练习
+                      </button>
                     </div>
                   </div>
                 )
               })}
             </div>
-
-            {/* 空状态 */}
-            {!todayMission?.goals.length && (
-              <div className="p-8 text-center">
-                <p className="text-4xl mb-4">📅</p>
-                <p className="text-text">今日任务未初始化</p>
-                <button
-                  onClick={() => {
-                    initializeDailyMission(courses.map(c => ({
-                      id: c.id,
-                      lessons: c.lessons.map(l => ({ id: l.id, title: l.title })),
-                    })))
-                  }}
-                  className="mt-4 px-4 py-2 bg-primary text-white rounded-xl"
-                >
-                  点击初始化
-                </button>
-              </div>
-            )}
           </div>
         </section>
-
-        {/* 提示 */}
-        <div className="bg-blue-50 rounded-2xl p-4">
-          <h3 className="font-bold text-blue-800 mb-2">💡 说明</h3>
-          <ul className="text-blue-600 text-sm space-y-1">
-            <li>• 每次练习会记录一次练习次数</li>
-            <li>• 达到目标次数后，该课程显示"已完成"</li>
-            <li>• 所有课程都完成 = 今日任务完成</li>
-            <li>• 每天会自动重置新的今日任务</li>
-          </ul>
-        </div>
         </>
         ) : (
         <>
-        {/* 课程体系管理 */}
+        {/* 课程编辑 */}
         <section className="mb-6">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="font-heading text-lg text-text">📚 课程列表</h2>
-            <button
-              onClick={() => {
-                alert('添加课程功能开发中...')
-              }}
-              className="px-3 py-1 bg-primary text-white rounded-lg text-sm"
-            >
-              ➕ 添加课程
-            </button>
+            <h2 className="font-heading text-lg text-text">📚 课程内容编辑</h2>
+            <span className="text-sm text-text-light">点击编辑按钮修改课程内容</span>
           </div>
 
           <div className="space-y-4">
@@ -185,57 +207,174 @@ export default function Admin() {
                 <div className="px-4 py-3 bg-gradient-to-r from-orange-400 to-orange-500 text-white">
                   <div className="flex items-center gap-2">
                     <span className="text-2xl">{course.emoji}</span>
-                    <div className="flex-1">
-                      <span className="font-bold">{course.title}</span>
-                      <span className="ml-2 text-white/80 text-sm">
-                        {course.lessons.length} 课时
-                      </span>
-                    </div>
-                    <button
-                      onClick={() => alert('编辑课程功能开发中...')}
-                      className="px-2 py-1 bg-white/20 rounded text-sm hover:bg-white/30"
-                    >
-                      ✏️ 编辑
-                    </button>
+                    <span className="font-bold">{course.title}</span>
+                    <span className="ml-auto text-white/80 text-sm">
+                      {course.lessons.length} 课时
+                    </span>
                   </div>
                 </div>
 
                 {/* 课时列表 */}
                 <div className="divide-y divide-gray-100">
-                  {course.lessons.map((lesson, lessonIndex) => {
+                  {course.lessons.map((lesson, index) => {
                     const progress = lessonProgress[lesson.id]
+                    const display = getLessonDisplay(lesson.id, lesson.title)
+                    const targetCount = getTargetCount(lesson.id)
+                    const isEditing = editingLessonId === lesson.id
+
                     return (
-                      <div key={lesson.id} className="px-4 py-3 flex items-center gap-3">
-                        <span className="text-lg font-medium text-text-light">
-                          {lessonIndex + 1}
-                        </span>
-                        <div className="flex-1">
-                          <span className="font-medium text-text">{lesson.title}</span>
-                          {progress && (
-                            <div className="text-xs text-text-light mt-0.5">
-                              练习 {progress.attempts} 次 | 最高 {progress.bestScore} 分
-                              {progress.completed && <span className="text-green-500 ml-2">✅</span>}
+                      <div key={lesson.id} className="p-4">
+                        {isEditing ? (
+                          /* 编辑模式 */
+                          <div className="space-y-4">
+                            <div>
+                              <label className="block text-text font-medium mb-1">课时名称</label>
+                              <input
+                                type="text"
+                                value={editForm.title || ''}
+                                onChange={(e) => setEditForm(prev => ({ ...prev, title: e.target.value }))}
+                                className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary"
+                              />
                             </div>
-                          )}
-                        </div>
-                        <div className="flex items-center gap-2">
-                          {lesson.content?.chordDiagram && (
-                            <span className="text-xs bg-blue-50 text-blue-600 px-2 py-0.5 rounded">
-                              🎸 {lesson.content.chordDiagram}
+
+                            <div>
+                              <label className="block text-text font-medium mb-1">和弦/内容</label>
+                              <input
+                                type="text"
+                                value={editForm.chordDiagram || ''}
+                                onChange={(e) => setEditForm(prev => ({ ...prev, chordDiagram: e.target.value }))}
+                                placeholder="例如：C - Am - F - G"
+                                className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary"
+                              />
+                            </div>
+
+                            <div>
+                              <label className="block text-text font-medium mb-1">每日目标次数</label>
+                              <div className="flex items-center gap-3">
+                                <button
+                                  onClick={() => setEditForm(prev => ({ 
+                                    ...prev, 
+                                    targetCount: Math.max(1, (prev.targetCount || 2) - 1) 
+                                  }))}
+                                  className="w-10 h-10 bg-gray-100 rounded-xl text-xl hover:bg-gray-200"
+                                >
+                                  -
+                                </button>
+                                <span className="text-2xl font-bold text-primary w-12 text-center">
+                                  {editForm.targetCount || 2}
+                                </span>
+                                <button
+                                  onClick={() => setEditForm(prev => ({ 
+                                    ...prev, 
+                                    targetCount: Math.min(10, (prev.targetCount || 2) + 1) 
+                                  }))}
+                                  className="w-10 h-10 bg-gray-100 rounded-xl text-xl hover:bg-gray-200"
+                                >
+                                  +
+                                </button>
+                                <span className="text-text-light text-sm ml-2">次/天</span>
+                              </div>
+                            </div>
+
+                            <div>
+                              <label className="block text-text font-medium mb-1">谱子图片</label>
+                              {editForm.sheetImageUrl && (
+                                <img
+                                  src={editForm.sheetImageUrl}
+                                  alt="谱子预览"
+                                  className="w-full h-32 object-contain bg-gray-100 rounded-xl mb-2"
+                                />
+                              )}
+                              <div className="flex gap-2">
+                                <input
+                                  ref={fileInputRef}
+                                  type="file"
+                                  accept="image/*"
+                                  onChange={handleImageUpload}
+                                  className="hidden"
+                                />
+                                <button
+                                  onClick={() => fileInputRef.current?.click()}
+                                  className="flex-1 px-4 py-2 bg-blue-50 text-blue-600 rounded-xl text-sm"
+                                >
+                                  📷 上传图片
+                                </button>
+                                {editForm.sheetImageUrl && (
+                                  <button
+                                    onClick={() => setEditForm(prev => ({ ...prev, sheetImageUrl: '' }))}
+                                    className="px-4 py-2 bg-red-50 text-red-600 rounded-xl text-sm"
+                                  >
+                                    🗑️ 删除
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+
+                            <div className="flex gap-2 pt-2">
+                              <button
+                                onClick={cancelEdit}
+                                className="flex-1 px-4 py-2 bg-gray-100 text-text rounded-xl"
+                              >
+                                取消
+                              </button>
+                              <button
+                                onClick={saveEdit}
+                                className="flex-1 px-4 py-2 bg-primary text-white rounded-xl font-bold"
+                              >
+                                保存
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          /* 查看模式 */
+                          <div className="flex items-start gap-3">
+                            <span className="w-8 h-8 bg-orange-100 rounded-full flex items-center justify-center text-orange-600 font-bold text-sm">
+                              {index + 1}
                             </span>
-                          )}
-                          {lesson.standardNotes && lesson.standardNotes.length > 0 && (
-                            <span className="text-xs bg-green-50 text-green-600 px-2 py-0.5 rounded">
-                              🎵 {lesson.standardNotes.length} 音符
-                            </span>
-                          )}
-                        </div>
-                        <button
-                          onClick={() => navigate(`/lesson/${lesson.id}`)}
-                          className="px-3 py-1 bg-orange-100 text-orange-600 rounded-lg text-sm"
-                        >
-                          练习
-                        </button>
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2">
+                                <span className="font-medium text-text">{display.title}</span>
+                                {progress?.completed && (
+                                  <span className="text-green-500 text-sm">✅ 已完成</span>
+                                )}
+                              </div>
+                              <div className="flex flex-wrap items-center gap-2 mt-1">
+                                {display.chordDiagram && (
+                                  <span className="text-xs bg-blue-50 text-blue-600 px-2 py-0.5 rounded">
+                                    🎸 {display.chordDiagram}
+                                  </span>
+                                )}
+                                <span className="text-xs bg-orange-50 text-orange-600 px-2 py-0.5 rounded">
+                                  🎯 每日 {targetCount} 次
+                                </span>
+                                {display.sheetImageUrl && (
+                                  <span className="text-xs bg-purple-50 text-purple-600 px-2 py-0.5 rounded">
+                                    🖼️ 有谱子
+                                  </span>
+                                )}
+                                {progress && (
+                                  <span className="text-xs text-text-light">
+                                    📝 {progress.attempts}次 | 🏆 {progress.bestScore}分
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                            <div className="flex gap-2">
+                              <button
+                                onClick={() => startEdit(lesson.id)}
+                                className="px-3 py-1 bg-blue-100 text-blue-600 rounded-lg text-sm"
+                              >
+                                ✏️ 编辑
+                              </button>
+                              <button
+                                onClick={() => navigate(`/lesson/${lesson.id}`)}
+                                className="px-3 py-1 bg-orange-100 text-orange-600 rounded-lg text-sm"
+                              >
+                                练习
+                              </button>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     )
                   })}
@@ -265,7 +404,7 @@ export default function Admin() {
               <div className="text-2xl font-bold text-orange-600">
                 {Object.values(lessonProgress).reduce((sum, p) => sum + (p?.attempts || 0), 0)}
               </div>
-              <div className="text-xs text-text-light">总练习次数</div>
+              <div className="text-xs text-text-light">总练习</div>
             </div>
             <div className="bg-yellow-100 rounded-xl p-3">
               <div className="text-2xl font-bold text-yellow-600">

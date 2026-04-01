@@ -21,7 +21,10 @@ interface DailyMissionStore {
   todayMission: DailyMission | null
   
   // Actions
-  initializeDailyMission: (courses: { id: string; lessons: { id: string; title: string }[] }[]) => void
+  initializeDailyMission: (
+    courses: { id: string; lessons: { id: string; title: string }[] }[],
+    lessonConfigs?: Record<string, { targetCount?: number }>
+  ) => void
   recordPractice: (lessonId: string) => void
   completeDailyMission: () => void
   isTodayMissionComplete: () => boolean
@@ -35,7 +38,7 @@ export const useDailyMissionStore = create<DailyMissionStore>()(
     (set, get) => ({
       todayMission: null,
 
-      initializeDailyMission: (courses) => {
+      initializeDailyMission: (courses, lessonConfigs?: Record<string, { targetCount?: number }>) => {
         const today = getToday()
         const { todayMission } = get()
 
@@ -50,11 +53,12 @@ export const useDailyMissionStore = create<DailyMissionStore>()(
           // 每个课程选一个课时作为今日目标
           const firstLesson = course.lessons[0]
           if (firstLesson) {
+            const config = lessonConfigs?.[firstLesson.id]
             goals.push({
               lessonId: firstLesson.id,
               title: firstLesson.title,
               emoji: '🎸',  // 默认emoji
-              targetCount: 2,  // 默认目标：练习2次
+              targetCount: config?.targetCount || 2,  // 使用配置的次数或默认2次
               currentCount: 0,
             })
           }
