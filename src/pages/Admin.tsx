@@ -1,9 +1,10 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { courses } from '../data/courses'
 import { useDailyMissionStore } from '../stores/dailyMissionStore'
-import { useCourseConfigStore, type LessonConfig } from '../stores/courseConfigStore'
+import { useCourseConfigStore } from '../stores/courseConfigStore'
+import type { LessonConfig } from '../stores/courseConfigStore'
 import { useProgressStore } from '../stores/progressStore'
 
 export default function Admin() {
@@ -15,7 +16,12 @@ export default function Admin() {
   const fileInputRef = useRef<HTMLInputElement>(null)
   
   const { todayMission, initializeDailyMission } = useDailyMissionStore()
-  const { lessonConfigs, updateLessonConfig, deleteLesson, deleteCourse } = useCourseConfigStore()
+  const { lessonConfigs, updateLessonConfig, deleteLesson, deleteCourse, refreshConfigs } = useCourseConfigStore()
+
+  // 页面加载时从 localStorage 刷新配置
+  useEffect(() => {
+    refreshConfigs()
+  }, [])
   const lessonProgress = useProgressStore((s) => s.lessons)
 
   // 过滤掉隐藏的课程（响应式）
