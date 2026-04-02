@@ -47,23 +47,25 @@ export const useDailyMissionStore = create<DailyMissionStore>()(
           return
         }
 
-        // 生成新的今日任务：每天只选一个课时作为目标
+        // 生成新的今日任务：所有未完成练习的总和
         const goals: DailyLessonGoal[] = []
         
-        // 随机选一个课程的第一个课时作为今日任务
-        const randomIndex = Math.floor(Math.random() * courses.length)
-        const selectedCourse = courses[randomIndex]
-        if (selectedCourse?.lessons?.[0]) {
-          const firstLesson = selectedCourse.lessons[0]
-          const config = lessonConfigs?.[firstLesson.id]
-          goals.push({
-            lessonId: firstLesson.id,
-            title: firstLesson.title,
-            emoji: '🎸',  // 默认emoji
-            targetCount: config?.targetCount || 2,  // 使用配置的次数或默认2次
-            currentCount: 0,
+        // 遍历所有课程的所有课时
+        courses.forEach(course => {
+          course.lessons.forEach(lesson => {
+            const config = lessonConfigs?.[lesson.id] as { targetCount?: number; hidden?: boolean } | undefined
+            // 只添加未隐藏的课程
+            if (config?.hidden !== true) {
+              goals.push({
+                lessonId: lesson.id,
+                title: lesson.title,
+                emoji: '🎸',  // 默认emoji
+                targetCount: config?.targetCount || 2,  // 使用配置的次数或默认2次
+                currentCount: 0,
+              })
+            }
           })
-        }
+        })
 
         set({
           todayMission: {
