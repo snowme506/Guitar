@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { courses } from '../data/courses'
@@ -22,6 +22,14 @@ export default function Lesson() {
 
   const [recordingUrl, setRecordingUrl] = useState<string | null>(null)
 
+  // 加载课程配置
+  const lessonConfigs = useCourseConfigStore((s) => s.lessonConfigs)
+  const refreshConfigs = useCourseConfigStore((s) => s.refreshConfigs)
+  
+  useEffect(() => {
+    refreshConfigs()
+  }, [])
+
   // 从任务获取课时内容（任务直接包含所有内容）
   const missionId = lessonId ? `mission-${lessonId}` : null
   const missions = useMissionStore((s) => s.missions)
@@ -34,7 +42,7 @@ export default function Lesson() {
   const course = courses.find(c => c.lessons.some(l => l.id === lessonId))
 
   // 从课程配置读取谱子图片和自定义标题
-  const courseConfig = useCourseConfigStore((s) => s.getLessonConfig(lessonId!))
+  const courseConfig = lessonConfigs[lessonId!]
   const sheetImageData = courseConfig?.sheetImageData
 
   // 优先用 courseConfig 里的标题（用户自定义名），再 fallback 到 mission/lesson 原名
