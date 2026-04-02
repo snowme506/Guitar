@@ -47,22 +47,23 @@ export const useDailyMissionStore = create<DailyMissionStore>()(
           return
         }
 
-        // 生成新的今日任务：选择可用的课程组成今日计划
+        // 生成新的今日任务：每天只选一个课时作为目标
         const goals: DailyLessonGoal[] = []
-        courses.forEach(course => {
-          // 每个课程选一个课时作为今日目标
-          const firstLesson = course.lessons[0]
-          if (firstLesson) {
-            const config = lessonConfigs?.[firstLesson.id]
-            goals.push({
-              lessonId: firstLesson.id,
-              title: firstLesson.title,
-              emoji: '🎸',  // 默认emoji
-              targetCount: config?.targetCount || 2,  // 使用配置的次数或默认2次
-              currentCount: 0,
-            })
-          }
-        })
+        
+        // 随机选一个课程的第一个课时作为今日任务
+        const randomIndex = Math.floor(Math.random() * courses.length)
+        const selectedCourse = courses[randomIndex]
+        if (selectedCourse?.lessons?.[0]) {
+          const firstLesson = selectedCourse.lessons[0]
+          const config = lessonConfigs?.[firstLesson.id]
+          goals.push({
+            lessonId: firstLesson.id,
+            title: firstLesson.title,
+            emoji: '🎸',  // 默认emoji
+            targetCount: config?.targetCount || 2,  // 使用配置的次数或默认2次
+            currentCount: 0,
+          })
+        }
 
         set({
           todayMission: {
