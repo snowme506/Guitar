@@ -1,12 +1,52 @@
-const API_BASE = 'http://101.201.181.170:3000'
+// 本地存储 API - 不需要后端
+const STORAGE_KEY = 'guitar-lesson-configs'
+
+function getStoredConfigs() {
+  try {
+    const data = localStorage.getItem(STORAGE_KEY)
+    return data ? JSON.parse(data) : {}
+  } catch {
+    return {}
+  }
+}
+
+function saveConfigs(configs: Record<string, any>) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(configs))
+}
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
-  const res = await fetch(`${API_BASE}${path}`, {
-    headers: { 'Content-Type': 'application/json' },
-    ...options,
-  })
-  if (!res.ok) throw new Error(`API error: ${res.status}`)
-  return res.json()
+  // 如果是写操作，更新 localStorage
+  if (options?.method === 'POST' || options?.method === 'DELETE') {
+    const configs = getStoredConfigs()
+    const match = path.match(/\/api\/lessons\/([^/]+)/)
+    const lessonId = match ? match[1] : null
+    
+    if (options.method === 'DELETE' && lessonId) {
+      // 删除：将 hidden 设为 true
+      configs[lessonId] = { ...configs[lessonId], lessonId, hidden: true }
+      saveConfigs(configs)
+    } else if (options.method === 'POST' && lessonId) {
+      // 更新：合并配置
+      const body = JSON.parse(options.body as string)
+      configs[lessonId] = { ...configs[lessonId], lessonId, ...body }
+      saveConfigs(configs)
+    }
+  }
+  
+  // 读操作从 localStorage 读取
+  if (path.startsWith('/api/lessons')) {
+    if (path === '/api/lessons' || path === '/api/lessons/config') {
+      return getStoredConfigs() as T
+    }
+    const match = path.match(/\/api\/lessons\/([^/]+)/)
+    const lessonId = match ? match[1] : null
+    if (lessonId) {
+      const configs = getStoredConfigs()
+      return (configs[lessonId] || null) as T
+    }
+  }
+  
+  return {} as T
 }
 
 export const api = {
@@ -34,57 +74,36 @@ export const api = {
   deleteLessonConfig: (lessonId: string) =>
     request(`/api/lessons/${lessonId}/config`, { method: 'DELETE' }),
 
-  // 每日任务
-  getDailyMission: (date?: string) =>
-    request<{ date: string; goals: any[]; completed: boolean; completedAt?: string; starReward: number } | null>(
-      `/api/daily-mission?date=${date || new Date().toISOString().split('T')[0]}`
-    ),
+  // 每日任务 - 暂时用 localStorage
+  getDailyMission: () => {
+    const data = localStorage.getItem('guitar-daily-mission')
+    return Promise.resolve(data ? JSON.parse(data) : null)
+  },
 
-  saveDailyMission: (data: { date: string; goals: any[]; completed: boolean; completedAt?: string; starReward: number }) =>
-    request(`/api/daily-mission`, {
-      method: 'POST',
-      body: JSON.stringify(data),
-    }),
+  saveDailyMission: (data: any) => {
+    localStorage.setItem('guitar-daily-mission', JSON.stringify(data))
+    return Promise.resolve()
+  },
 
-  recordPractice: (lessonId: string, date?: string) =>
-    request<{ success: boolean; goals: any[]; completed: boolean }>(
-      `/api/daily-mission/record`,
-      {
-        method: 'POST',
-        body: JSON.stringify({ lessonId, date: date || new Date().toISOString().split('T')[0] }),
-      }
-    ),
+  recordPractice: () => {
+    // 简化实现
+    return Promise.resolve({ success: true, goals: [], completed: false })
+  },
 
-  // 学习进度
-  getProgress: () =>
-    request<{ totalStars: number; earnedBadges: string[]; outfits: string[]; lessons: Record<string, any> }>(
-      `/api/progress`
-    ),
+  // 学习进度 - localStorage
+  getProgress: () => {
+    const data = localStorage.getItem('guitar-progress')
+    return Promise.resolve(data ? JSON.parse(data) : { totalStars: 0, earnedBadges: [], outfits: [], lessons: {} })
+  },
 
-  getLessonProgress: (lessonId: string) =>
-    request<any | null>(`/api/progress/${lessonId}`),
+  getLessonProgress: (lessonId: string) => {
+    const data = localStorage.getItem('guitar-progress')
+    const progress = data ? JSON.parse(data) : {}
+    return Promise.resolve(progress.lessons?.[lessonId] || null)
+  },
 
-  updateLessonProgress: (lessonId: string, data: { score?: number; stars?: number; completed?: boolean }) =>
-    request(`/api/progress/${lessonId}`, {
-      method: 'POST',
-      body: JSON.stringify(data),
-    }),
-
-  addStars: (count: number) =>
-    request(`/api/progress/add-stars`, {
-      method: 'POST',
-      body: JSON.stringify({ count }),
-    }),
-
-  addBadge: (badgeId: string) =>
-    request(`/api/progress/add-badge`, {
-      method: 'POST',
-      body: JSON.stringify({ badgeId }),
-    }),
-
-  unlockOutfit: (outfitId: string) =>
-    request(`/api/progress/unlock-outfit`, {
-      method: 'POST',
-      body: JSON.stringify({ outfitId }),
-    }),
+  updateLessonProgress: () => Promise.resolve(),
+  addStars: () => Promise.resolve(),
+  addBadge: () => Promise.resolve(),
+  unlockOutfit: () => Promise.resolve(),
 }

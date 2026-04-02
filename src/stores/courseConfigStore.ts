@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import { persist } from 'zustand/middleware'
 import { api } from '../lib/api'
 
 // 课程配置
@@ -12,9 +13,12 @@ export interface LessonConfig {
   hidden?: boolean
 }
 
-export const useCourseConfigStore = create<{
+interface CourseConfigState {
   lessonConfigs: Record<string, LessonConfig>
   loading: boolean
+}
+
+interface CourseConfigActions {
   updateLessonConfig: (lessonId: string, config: Partial<LessonConfig>) => Promise<void>
   getLessonConfig: (lessonId: string) => LessonConfig | undefined
   deleteLesson: (lessonId: string) => Promise<void>
@@ -22,94 +26,107 @@ export const useCourseConfigStore = create<{
   resetLessonConfig: (lessonId: string) => Promise<void>
   isLessonVisible: (lessonId: string) => boolean
   refreshConfigs: () => Promise<void>
-}>((set, get) => ({
-  lessonConfigs: {},
-  loading: true,
+}
 
-  refreshConfigs: async () => {
-    try {
-      const data = await api.getAllLessonConfigs()
-      set({ lessonConfigs: data || {}, loading: false })
-    } catch {
-      set({ loading: false })
-    }
-  },
+type CourseConfigStore = CourseConfigState & CourseConfigActions
 
-  updateLessonConfig: async (lessonId, config) => {
-    try {
-      await api.updateLessonConfig(lessonId, config)
-      set(state => ({
-        lessonConfigs: {
-          ...state.lessonConfigs,
-          [lessonId]: {
-            ...state.lessonConfigs[lessonId],
-            lessonId,
-            ...config,
+export const useCourseConfigStore = create<CourseConfigStore>()(
+  persist(
+    (set, get) => ({
+      lessonConfigs: {},
+      loading: false,
+
+      refreshConfigs: async () => {
+        try {
+          const data = await api.getAllLessonConfigs()
+          set({ lessonConfigs: data || {}, loading: false })
+        } catch {
+          set({ loading: false })
+        }
+      },
+
+      updateLessonConfig: async (lessonId, config) => {
+        // 先更新本地状态
+        set(state => ({
+          lessonConfigs: {
+            ...state.lessonConfigs,
+            [lessonId]: {
+              ...state.lessonConfigs[lessonId],
+              lessonId,
+              ...config,
+            },
           },
-        },
-      }))
-    } catch (e) {
-      console.error('Failed to update config:', e)
-    }
-  },
+        }))
+        // 再同步到存储
+        try {
+          await api.updateLessonConfig(lessonId, config)
+        } catch (e) {
+          console.error('Failed to update config:', e)
+        }
+      },
 
-  getLessonConfig: (lessonId) => {
-    return get().lessonConfigs[lessonId]
-  },
+      getLessonConfig: (lessonId) => {
+        return get().lessonConfigs[lessonId]
+      },
 
-  deleteLesson: async (lessonId) => {
-    try {
-      await api.deleteLessonConfig(lessonId)
-      set(state => ({
-        lessonConfigs: {
-          ...state.lessonConfigs,
-          [lessonId]: {
-            ...state.lessonConfigs[lessonId],
-            lessonId,
-            hidden: true,
+      deleteLesson: async (lessonId) => {
+        // 先更新本地状态
+        set(state => ({
+          lessonConfigs: {
+            ...state.lessonConfigs,
+            [lessonId]: {
+              ...state.lessonConfigs[lessonId],
+              lessonId,
+              hidden: true,
+            },
           },
-        },
-      }))
-    } catch (e) {
-      console.error('Failed to delete lesson:', e)
-    }
-  },
+        }))
+        try {
+          await api.deleteLessonConfig(lessonId)
+        } catch (e) {
+          console.error('Failed to delete lesson:', e)
+        }
+      },
 
-  deleteCourse: async (_courseId, lessonIds) => {
-    try {
-      for (const id of lessonIds) {
-        await api.deleteLessonConfig(id)
-      }
-      set(state => {
-        const configs = { ...state.lessonConfigs }
-        lessonIds.forEach(id => {
-          configs[id] = { ...configs[id], lessonId: id, hidden: true }
+      deleteCourse: async (_courseId, lessonIds) => {
+        // 先更新本地状态
+        set(state => {
+          const configs = { ...state.lessonConfigs }
+          lessonIds.forEach(id => {
+            configs[id] = { ...configs[id], lessonId: id, hidden: true }
+          })
+          return { lessonConfigs: configs }
         })
-        return { lessonConfigs: configs }
-      })
-    } catch (e) {
-      console.error('Failed to delete course:', e)
+        try {
+          for (const id of lessonIds) {
+            await api.deleteLessonConfig(id)
+          }
+        } catch (e) {
+          console.error('Failed to delete course:', e)
+        }
+      },
+
+      resetLessonConfig: async (lessonId) => {
+        // 先更新本地状态
+        set(state => {
+          const configs = { ...state.lessonConfigs }
+          delete configs[lessonId]
+          return { lessonConfigs: configs }
+        })
+        try {
+          await api.deleteLessonConfig(lessonId)
+        } catch (e) {
+          console.error('Failed to reset config:', e)
+        }
+      },
+
+      isLessonVisible: (lessonId) => {
+        const config = get().lessonConfigs[lessonId]
+        return !config?.hidden
+      },
+    }),
+    {
+      name: 'guitar-course-configs',
     }
-  },
-
-  resetLessonConfig: async (lessonId) => {
-    try {
-      await api.deleteLessonConfig(lessonId)
-      set(state => {
-        const configs = { ...state.lessonConfigs }
-        delete configs[lessonId]
-        return { lessonConfigs: configs }
-      })
-    } catch (e) {
-      console.error('Failed to reset config:', e)
-    }
-  },
-
-  isLessonVisible: (lessonId) => {
-    const config = get().lessonConfigs[lessonId]
-    return !config?.hidden
-  },
-}))
-
-// 初始化时从 API 加载
-useCourseConfigStore.getState().refreshConfigs()
+  )
+)
